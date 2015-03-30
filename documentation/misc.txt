@@ -1,0 +1,11 @@
+LS_COLORS=`echo $LS_COLORS |sed 's/di=[0-9][0-9];[0-9][0-9]/di=01;94/'`
+
+#d'abord un nmap pour scanner les instrument et obternir leurs ip 
+nmap  -sP 192.168.0.0/24
+arp
+#avec les adresses mac, on leur affecte un ip static par le dhcp local sur eth1
+mkdir ~/remote
+sshfs USER@192.168.178.32:/home/USER ~/remote
+cp -p someFile ~/remote/put/it/some/where/oh/damn/you/here
+export PYTHONPATH=$HOME/dirWithScripts/:$PYTHONPATH
+emacs --reverse-video 

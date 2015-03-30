@@ -1,0 +1,13 @@
+#  configuration réseau, /etc/network/interfaces
+
+auto lo
+
+#iface lo inet loopback
+iface eth0 inet dhcp
+iface eth1 inet static
+address 192.168.0.40
+netmask 255.255.255.0
+alow-hotplug eth1
+
+
+
