@@ -3,6 +3,12 @@
 import serial, time
 
 class AlimE3631A:
+    """
+    make sure I/O config button is set to RS-232 and not HPIB / 488
+    I this example, I used a USB Serial Converter and a female-female
+    cross cable
+    Make sure your select the correct /dev/ttyUSBx 
+    """
     
     def __init__(self, ser="/dev/ttyUSB0", br9600=9600):
         self.SERIALPORT = ser
@@ -17,14 +23,19 @@ class AlimE3631A:
         self.ser.dsrdtr = True
         self.ser.open()
         self.response = ""
-        self.send("SYST:REM")
+        self.send("SYST:REM") #<== a refaire si on appuye sur bouton 'Local'
         time.sleep(0.2)#<== le passage en remote mets un peu de temps
 
     def send(self,MESSAGE):
         try:
             self.ser.write(MESSAGE+"\r\n")
+            time.sleep(0.2) #<== dont spam it
+            # to send many command "CMD1;CMD2;CMD3;CMD4?"
+            # if a query, stop sending commands
+            
             if '?' in MESSAGE:
-                time.sleep(0.5)
+#                time.sleep(0.5) 0.2+0.3
+                time.sleep(0.3)
                 self.response=self.ser.readline()
                 return self.response
 
@@ -48,10 +59,14 @@ if __name__ == '__main__':
              SYST:ERR?
              APPLY? P6V
              *RST
+             SYST:REM                #<== si appuie Store/Local ==> redo it
              MEASure:VOLTage:DC? P6V
+             MEAS:VOLT?
              MEAS:CURR:DC? P6V
+             MEAS:CURR:DC? P25V
              INST:SEL P6V         #<== appuye bouton +6V
-             APPL P6V, 5.0, 1.0   #<== Set 5.0 volts / 1.0 amp to +6V output
+             APPL P6V, 1.8, 1.0   #<== Set 1.8 volts / 1.0 amp to +6V output
+             APPL P25V, 3.5, 1.0  #<== Set 3.5 volts / 1.0 amp to +25V output
             """
     print 'To (q)uit, type q\n'
     msg = "*IDN?"

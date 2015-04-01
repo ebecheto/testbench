@@ -113,7 +113,15 @@ if __name__ == '__main__':
     print("Si ca marche pas, un autre process doit etre en marche -> kill")
     ws = OscilloWavePro('192.168.0.45')
     print("Connected ?")
-    print '____exemple:____\nC1:VDIV?\n'
+    print  """    ____exemple:____    respond
+    C1:VDIV?       #<== Voltage / division of channel 1
+    PAST? CUST,P1  #<== measure given by param 1 , mean, max, sdev...
+    SCDP           #<== screen dump = save to file.png
+    PACU? 1        #<== reply how is set the parameter 1
+            # set manually a parameter then ask 'PACU? 1' what is the syntax
+    PACU 3, DDLY, C1, C2 #<== set param 1 as the delay between ch1 and ch2
+    VBS 'app.Acquisition.Trigger.C2.Level=0.055' #<== more advanced features
+    """
     print 'to (q)uit type q\n'
 
     msg = "*IDN?"
