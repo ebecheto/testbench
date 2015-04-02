@@ -1,6 +1,6 @@
 # TestBench
 
-Un environnement de test informel à base d'un RasberryPi.
+Un environnement de test informel a base d'un RasberryPi.
 
 ![synoptique setup1](./setup1.png)
 
@@ -9,4 +9,10 @@ LabView, mais avec du code plutôt que du graphique (également, c'est gratuit).
 tout consiste en une configuration basique d'un RPi ainsi que de quelques drivers
 pour les instruments qu'on a sous la main.
 
+setup your python path, or put the drivers in ``` python -m site --user-site ```
 
+``` shell
+export PYTHONPATH=~/testbench/drivers/
+#  or
+mkdir -p "`python -m site --user-site`"
+```
