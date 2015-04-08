@@ -15,4 +15,5 @@ setup your python path, or put the drivers in ``` python -m site --user-site ```
 export PYTHONPATH=~/testbench/drivers/
 #  or
 mkdir -p "`python -m site --user-site`"
+mv drivers/* $(python -m site --user-site)
 ```

@@ -4,6 +4,21 @@
 import socket,sys
 import collections
 
+
+
+def closerVal(val, nlist=[0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10]):
+    """
+    take the closer value 'floor' under the select value in the selected list
+    returns the list (one under, closer, one above, value)
+    used to select the calibre of the oscillo
+    """
+    i, closer =min(enumerate(nlist), key=lambda x:abs(x[1]-val))
+    above = nlist[i+1] if i < len(nlist)-1 else nlist[-1]
+    under = nlist[i-1] if i > 0 else closer
+    return under, closer, above, val
+
+
+
 class OscilloWavePro:
     Measure = collections.namedtuple('Measure',
         'SLOT TEXT AVG HIGH LAST LOW SIGMA SWEEPS')
@@ -36,18 +51,19 @@ class OscilloWavePro:
         try:
             self.s.send(HEADER+MESSAGE)
             if '?' in MESSAGE:
-                tmp = self.s.recv(OscilloWavePro.BUFFER_SIZE)
+                tmp = self.s.recv(self.BUFFER_SIZE)
                 self.response = tmp[8:-1]
+                return self.response
         except socket.error as e:
             self.connect()
             self.send(MESSAGE)
 
 
-    def request(self, req):
+    def getVal(self, req):
         """
         convenient generic function send request return
         WARNING could not work for some specifics
-        ie. #=>  request("C1:VDIV?") ==> C1:VDIV 20E-3 V => 20E-3
+        ie. #=>  getVal("C1:VDIV?") ==> C1:VDIV 20E-3 V => 20E-3
         """
         self.send(req)
         ret=self.response.split(' ')[1]
@@ -71,6 +87,8 @@ class OscilloWavePro:
            slot: numéro de la mesure
            measurecommand: commande et ses paramètres (voir documentation
             cdn.teledynelecroy.com/files/manuals/wm-rcm-e_rev_d.pdf )
+            osc.setMeasureSlot(4, "MAX,C1" )
+            osc.setMeasureSlot(4, "DDLY, C1, C2")
            """
         self.send("PACU {0},{1}".format(slot, measurecommand))
 
@@ -109,7 +127,52 @@ class OscilloWavePro:
                     SIGMA = mes['SIGMA'],
                     SWEEPS = mes['SWEEPS'])
 
-if __name__ == '__main__':    
+## added convienient  features
+# setMaxFit(1,1,2)    # default
+# setMaxFit(1,None,2) # default
+# setMaxFit(NDIV=3)   # could be preferer
+    def setMaxFit(self, CH=1, PX=None, NDIV=2):
+        """
+        Ajuste le maximum  
+        """
+        PX=CH if PX is None else PX
+        vdiv=self.getVal("C{}:VDIV?".format(CH))
+        self.send("C{}:OFST {}".format(CH, -NDIV*vdiv))
+        self.send("PACU {}, MAX, C{};CLSW".format(PX, CH))
+        ymax=float(self.getMeasurement(PX).AVG)
+        while ymax < (1+NDIV)*vdiv:
+            vdiv=closerVal(vdiv)[0]
+            self.send("C{}:VDIV {}; C{}:OFST {}".format(
+                        CH,    vdiv,CH,  -NDIV*vdiv))
+            while float(self.getMeasurement(PX).SWEEPS) <= 2:
+                pass
+            ymax=float(self.getMeasurement(PX).AVG)
+
+        while ymax>(3+NDIV)*vdiv:
+            vdiv=closerVal(vdiv)[2]
+            self.send("C{}:VDIV {}; C{}:OFST {}".format(
+                        CH,    vdiv, CH, -NDIV*vdiv))
+            while float(self.getMeasurement(PX).SWEEPS) <= 2:
+                pass
+            ymax=float(self.getMeasurement(PX).AVG)
+
+        vdiv=self.getVal("C{}:VDIV?".format(CH))
+        return vdiv
+
+    def setMaxZoom(self, CH=1, PX=None, ZM=2):
+        """
+        zoom to the parameter "ie maximum" between +/- sdev (SIGMA)
+        """
+        PX=CH if PX is None else PX
+        ret=self.getMeasurement(PX)
+        self.send("C{}:VDIV {};C{}:OFST {}".format(
+            CH, ZM*float(ret.SIGMA), CH, -float(ret.AVG)))
+
+
+
+
+if __name__ == '__main__':
+    import readline
     print("Si ca marche pas, un autre process doit etre en marche -> kill")
     ws = OscilloWavePro('192.168.0.45')
     print("Connected ?")
@@ -117,6 +180,7 @@ if __name__ == '__main__':
     C1:VDIV?       #<== Voltage / division of channel 1
     PAST? CUST,P1  #<== measure given by param 1 , mean, max, sdev...
     SCDP           #<== screen dump = save to file.png
+    C1:OFfSeT?     #<== OFST, gives the offset of channel 1
     PACU? 1        #<== reply how is set the parameter 1
             # set manually a parameter then ask 'PACU? 1' what is the syntax
     PACU 3, DDLY, C1, C2 #<== set param 1 as the delay between ch1 and ch2

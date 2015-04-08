@@ -36,7 +36,7 @@ class AlimE3631A:
             if '?' in MESSAGE:
 #                time.sleep(0.5) 0.2+0.3
                 time.sleep(0.3)
-                self.response=self.ser.readline()
+                self.response=self.ser.readline().strip('\r\n')
                 return self.response
 
         except serial.errno as e:
@@ -45,6 +45,17 @@ class AlimE3631A:
 
     def __del__(self):
         self.ser.close()
+
+    def currents(self):
+        i1=self.send("MEAS:CURR:DC? P6V")
+        i2=self.send("MEAS:CURR:DC? P25V")
+        i3=self.send("MEAS:CURR:DC? N25V")
+        return i1, i2, i3
+
+    def current2(self):
+        i1=self.send("MEAS:CURR:DC? P6V")
+        i2=self.send("MEAS:CURR:DC? P25V")
+        return i1, i2
 
 
 if __name__ == '__main__':
