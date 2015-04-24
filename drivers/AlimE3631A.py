@@ -57,12 +57,38 @@ class AlimE3631A:
         i2=self.send("MEAS:CURR:DC? P25V")
         return i1, i2
 
+    def RES(self):
+        return self.send("MEAS:RES?").split(',')[2]
+
+    def TEMP2RES(self,T):
+        return 100*(1+ 3.908e-3*T - 5.775e-7*T**2 + (0 if T > 0 else -4.183e-12)*(T-100)**3 )
+    
+    def temperature(self):
+        """
+        if the ohmmeter is connected to a pt100 probe, the temperature is
+        calculate by dichothomy. Chosen precision : 0.01
+        Valable pour keithley par pour alim agilent... branch driver ?
+        """
+        measure=float(self.RES())
+        inf=-200; sup=850 ; temp=0; essai=100
+        while abs(measure-essai)>=0.01:
+            if essai>measure:
+                sup=temp
+            else:
+                inf=temp
+            temp=(sup+inf)/2.0
+            essai=self.TEMP2RES(temp)
+        return round(temp)
+
 
 if __name__ == '__main__':
-    import readline
+    import readline, sys
     readline.parse_and_bind("tab: complete")
-    ae =  AlimE3631A("/dev/ttyUSB0", 9600)
-    while ae.send("SYST:ERR?") !='+0,"No error"\r\n':
+    port="0" if len(sys.argv)<=1 else sys.argv[1]
+    tty="/dev/ttyUSB"+port
+    print "== connecting to "+tty+" and purging possible errors =="
+    ae =  AlimE3631A(tty, 9600)
+    while not( '0,"No error"') in ae.send("SYST:ERR?"):
         print ae.response
     print """___exemple:___
              OUTPut ON
