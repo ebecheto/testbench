@@ -131,14 +131,16 @@ class OscilloWavePro:
 # setMaxFit(1,1,2)    # default
 # setMaxFit(1,None,2) # default
 # setMaxFit(NDIV=3)   # could be preferer
-    def setMaxFit(self, CH=1, PX=None, NDIV=2):
+    def setMaxFit(self, CH=1, PX=None, NDIV=2, MAX="MAX"):
         """
-        Ajuste le maximum  
+        Ajuste le maximum
+        MAX could be also Amplitude if needed
+        setMaxFit(1, 2, NDIV=0, MAX="AMPL")
         """
         PX=CH if PX is None else PX
         vdiv=self.getVal("C{}:VDIV?".format(CH))
         self.send("C{}:OFST {}".format(CH, -NDIV*vdiv))
-        self.send("PACU {}, MAX, C{};CLSW".format(PX, CH))
+        self.send("PACU {}, {}, C{};CLSW".format(PX, MAX, CH))
         ymax=float(self.getMeasurement(PX).AVG)
         while ymax < (1+NDIV)*vdiv:
             vdiv=closerVal(vdiv)[0]
@@ -159,11 +161,28 @@ class OscilloWavePro:
         vdiv=self.getVal("C{}:VDIV?".format(CH))
         return vdiv
 
-    def setMaxZoom(self, CH=1, PX=None, ZM=2):
+
+    def zoomCalibre(self):
+        vdiv=self.getVal("VDIV?")
+        vdiv=closerVal(float(vdiv))[0]
+        self.send("VDIV {}".format(vdiv))
+
+    def unzoomCalibre(self):
+        vdiv=self.getVal("VDIV?")
+        vdiv=closerVal(float(vdiv))[0]
+        self.send("VDIV {}".format(vdiv))
+
+    
+    def setMaxZoom(self, CH=1, PX=None, ZM=2, NUM=2):
         """
         zoom to the parameter "ie maximum" between +/- sdev (SIGMA)
+        Warning, OFFSET cannot be above 1V or under -1V. why ?...
+        (I can hear the relay clicking , changing some param in the scope)
+        if VDIV<=100mv .. pfff. give-up that function
         """
         PX=CH if PX is None else PX
+        while float(self.getMeasurement(PX).SWEEPS) <= NUM:
+            pass
         ret=self.getMeasurement(PX)
         self.send("C{}:VDIV {};C{}:OFST {}".format(
             CH, ZM*float(ret.SIGMA), CH, -float(ret.AVG)))
@@ -178,13 +197,16 @@ if __name__ == '__main__':
     print("Connected ?")
     print  """    ____exemple:____    respond
     C1:VDIV?       #<== Voltage / division of channel 1
+    TDIV?          #<== time / division
     PAST? CUST,P1  #<== measure given by param 1 , mean, max, sdev...
     SCDP           #<== screen dump = save to file.png
     C1:OFfSeT?     #<== OFST, gives the offset of channel 1
     PACU? 1        #<== reply how is set the parameter 1
+    C2:TRA OFF     #<== disable 'Trace On' for C2 curve
             # set manually a parameter then ask 'PACU? 1' what is the syntax
     PACU 3, DDLY, C1, C2 #<== set param 1 as the delay between ch1 and ch2
     VBS 'app.Acquisition.Trigger.C2.Level=0.055' #<== more advanced features
+    vbs 'app.SystemControl.CloseDialog' #<== close the bottom panel if opened
     """
     print 'to (q)uit type q\n'
 
