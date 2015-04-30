@@ -202,9 +202,11 @@ if __name__ == '__main__':
     SCDP           #<== screen dump = save to file.png
     C1:OFfSeT?     #<== OFST, gives the offset of channel 1
     PACU? 1        #<== reply how is set the parameter 1
+    C2:TRA OFF     #<== disable 'Trace On' for C2 curve
             # set manually a parameter then ask 'PACU? 1' what is the syntax
     PACU 3, DDLY, C1, C2 #<== set param 1 as the delay between ch1 and ch2
     VBS 'app.Acquisition.Trigger.C2.Level=0.055' #<== more advanced features
+    vbs 'app.SystemControl.CloseDialog' #<== close the bottom panel if opened
     """
     print 'to (q)uit type q\n'
 
