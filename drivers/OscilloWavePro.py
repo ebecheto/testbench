@@ -64,6 +64,10 @@ class OscilloWavePro:
         convenient generic function send request return
         WARNING could not work for some specifics
         ie. #=>  getVal("C1:VDIV?") ==> C1:VDIV 20E-3 V => 20E-3
+        IndexError: list index out of range *ù$! peut arriver
+        ==> lancer self.s.recv(self.BUFFER_SIZE))
+        ==> lancer osc.s.recv(osc.BUFFER_SIZE)
+        pour purger
         """
         self.send(req)
         ret=self.response.split(' ')[1]
@@ -131,7 +135,7 @@ class OscilloWavePro:
 # setMaxFit(1,1,2)    # default
 # setMaxFit(1,None,2) # default
 # setMaxFit(NDIV=3)   # could be preferer
-    def setMaxFit(self, CH=1, PX=None, NDIV=2, MAX="MAX"):
+    def setMaxFit(self, CH=1, PX=None, NDIV=3, MAX="MAX", ZOOM=True):
         """
         Ajuste le maximum
         MAX could be also Amplitude if needed
@@ -159,6 +163,8 @@ class OscilloWavePro:
             ymax=float(self.getMeasurement(PX).AVG)
 
         vdiv=self.getVal("C{}:VDIV?".format(CH))
+        if ZOOM:
+            vdiv=self.send("C{}:VDIV {}".format(CH, ymax/(2+NDIV)))
         return vdiv
 
 
