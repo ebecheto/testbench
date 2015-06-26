@@ -164,7 +164,8 @@ class OscilloWavePro:
 
         vdiv=self.getVal("C{}:VDIV?".format(CH))
         if ZOOM:
-            vdiv=self.send("C{}:VDIV {}".format(CH, ymax/(2+NDIV)))
+            vdiv=ymax/(2+NDIV)
+            self.send("C{}:VDIV {}".format(CH, vdiv))
         return vdiv
 
 
