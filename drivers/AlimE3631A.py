@@ -9,7 +9,7 @@ class AlimE3631A:
     cross cable
     Make sure your select the correct /dev/ttyUSBx 
     """
-    
+      
     def __init__(self, ser="/dev/ttyUSB0", br9600=9600):
         self.SERIALPORT = ser
         #SERIALPORT = "/dev/ttyUSB1"
@@ -21,14 +21,17 @@ class AlimE3631A:
         self.ser.xonxoff = False
         self.ser.rtscts = False
         self.ser.dsrdtr = True
+        self.ser.terminator = "\n"
+        # CR=\c LF=\n CR+LF=\c\n
         self.ser.open()
         self.response = ""
         self.send("SYST:REM") #<== a refaire si on appuye sur bouton 'Local'
         time.sleep(0.2)#<== le passage en remote mets un peu de temps
-
+        self.idn = self.send("*IDN?")
+        
     def send(self,MESSAGE):
         try:
-            self.ser.write(MESSAGE+"\r\n")
+            self.ser.write(MESSAGE+self.ser.terminator)
             time.sleep(0.2) #<== dont spam it
             # to send many command "CMD1;CMD2;CMD3;CMD4?"
             # if a query, stop sending commands
@@ -36,16 +39,14 @@ class AlimE3631A:
             if '?' in MESSAGE:
 #                time.sleep(0.5) 0.2+0.3
                 time.sleep(0.3)
-                self.response=self.ser.readline().strip('\r\n')
+                self.response=self.ser.readline().strip(self.ser.terminator)
                 return self.response
 
         except serial.errno as e:
             self.ser.open()
             self.send(MESSAGE)
-
-    def __del__(self):
-        self.ser.close()
-
+        
+            
     def currents(self):
         i1=self.send("MEAS:CURR:DC? P6V")
         i2=self.send("MEAS:CURR:DC? P25V")
@@ -55,6 +56,11 @@ class AlimE3631A:
     def current2(self):
         i1=self.send("MEAS:CURR:DC? P6V")
         i2=self.send("MEAS:CURR:DC? P25V")
+        return i1, i2
+
+    def volt2(self):
+        i1=self.send("MEAS:VOLT:DC? P6V")
+        i2=self.send("MEAS:VOLT:DC? P25V")
         return i1, i2
 
     def RES(self):
