@@ -21,11 +21,14 @@ class AlimE3631A:
         self.ser.xonxoff = False
         self.ser.rtscts = False
         self.ser.dsrdtr = True
+        self.ser.terminator = "\n"
+        # CR=\c LF=\n CR+LF=\c\n
         self.ser.open()
         self.response = ""
         self.send("SYST:REM") #<== a refaire si on appuye sur bouton 'Local'
         time.sleep(0.2)#<== le passage en remote mets un peu de temps
-
+        self.idn = self.send("*IDN?")
+ 
     def send(self,MESSAGE):
         try:
             self.ser.write(MESSAGE+"\r\n")
