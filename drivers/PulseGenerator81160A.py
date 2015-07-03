@@ -12,6 +12,7 @@ class PulseGenerator81160A:
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  
         self.connect()
         self.response = ""
+        self.idn = self.send("*IDN?")
         
     def __del__(self):
         self.s.close()
@@ -24,24 +25,30 @@ class PulseGenerator81160A:
             self.s.send(MESSAGE+"\n")
             if '?' in MESSAGE:
                 self.response = self.s.recv(self.BUFFER_SIZE)
+                return self.response
         except socket.error as e:
             self.connect()
             self.send(MESSAGE)
+        
             
     def setFrequency(self, freq):
         self.send("PULSe:FREQuency {}".format(freq))
+
+    def setTrail(self, edge):
+        self.send("PULSe:TRANsition1:TRAiling 1e-9 {}".format(edge))
 
 
 
 
 if __name__ == '__main__':    
-    pg = PulseGenerator81160A('192.168.0.53', 5025)
+    print 'Wait 8 seconds (slow to respond the 1st time)\n'
+    pg = PulseGenerator81160A('192.168.0.46', 5025)
     print '''____exemple:____
              OUTPUT ON
              OUTPUT2 OFF
              VOLT 1.2
              FREQ 1KHz'''
-    print 'To (q)uit, type q\nWait 8 seconds (slow to respond)\n'
+    print 'To (q)uit, type q\n'
     msg = "*IDN?"
     while msg != 'q':
         pg.send(msg)
