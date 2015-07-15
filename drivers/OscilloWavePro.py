@@ -33,6 +33,7 @@ class OscilloWavePro:
         self.connect()
         self.response = ""
         self.response_header = None
+        self.idn = self.send("*IDN?")
         
 
     def __del__(self):
