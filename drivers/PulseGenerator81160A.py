@@ -25,7 +25,7 @@ class PulseGenerator81160A:
             self.s.send(MESSAGE+"\n")
             if '?' in MESSAGE:
                 self.response = self.s.recv(self.BUFFER_SIZE)
-                return self.response
+                return self.response.strip('\n')
         except socket.error as e:
             self.connect()
             self.send(MESSAGE)
