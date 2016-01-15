@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import socket,sys
+import socket,sys,time
 import collections
 
 
@@ -45,20 +45,21 @@ class OscilloWavePro:
     def connect(self):
         self.s.connect((self.ip, self.port))
 
-    def send(self,MESSAGE):
-        TAILLE=len(""+MESSAGE)
+    def send(self,msg):
+        TAILLE=len(""+msg)
         HEADER = "81"+"01"+"01"+"00"+ ("%08x" % TAILLE)
         HEADER = HEADER.decode('hex')
         try:
-            self.s.send(HEADER+MESSAGE)
-            if '?' in MESSAGE:
+            self.s.send(HEADER+msg)
+            if '?' in msg:
                 tmp = self.s.recv(self.BUFFER_SIZE)
                 self.response = tmp[8:-1]
                 return self.response
         except socket.error as e:
             self.connect()
-            self.send(MESSAGE)
-
+            self.send(msg)
+    def get(self):
+        return self.s.recv(self.BUFFER_SIZE)
 
     def getVal(self, req):
         """
@@ -78,6 +79,8 @@ class OscilloWavePro:
     def clearSweeps(self):
         self.send("CLSW")
 
+    def setCaliber(self, ch, vdiv, offset=0):
+        self.send("C{}:VDIV {}; C{}:OFST {}".format(ch, vdiv, ch, offset))
             
     def printScreen(self):
         """
@@ -169,7 +172,54 @@ class OscilloWavePro:
             self.send("C{}:VDIV {}".format(CH, vdiv))
         return vdiv
 
+    def optimizeCaliber(self, ch, start1VperDiv=True):
+        """
+        set vertical caliber and cursor of the given channel to use
+        all the screen available for display.
+        """
+        NDIV = 6
+        
+        # we need to mesure min and max, but we save the current parameters
+        # to restore them afterwards
+        old_params = self.getMeasureSlot(1), self.getMeasureSlot(2)
+        self.setMeasureSlot(1, 'MIN, C{}'.format(ch))
+        self.setMeasureSlot(2, 'MAX, C{}'.format(ch))
+        
+        vdiv = 0.1
+        offset = 0
+        
+        # start with cursor in the middle of the screen and 
+        # a 1V/div caliber. The signal should hopefully fit on the screen.
+        if start1VperDiv:
+            new_vdiv = 1
+            new_offset = 0
+        else:
+            new_vdiv = float(self.getVal("C{}:VDIV?".format(ch)))
+            new_offset = float(self.getVal("c{}:OFST?".format(ch)))
 
+        while (abs(new_vdiv-vdiv)/vdiv > .05):
+            self.setCaliber(ch, new_vdiv, new_offset)
+            self.clearSweeps()
+            
+            vdiv = new_vdiv
+            offset = new_offset
+
+            while float(self.getMeasurement(1).SWEEPS) <= 3:
+                pass
+            ymin = float(self.getMeasurement(1).AVG)
+
+            while float(self.getMeasurement(2).SWEEPS) <= 3:
+                pass
+            ymax = float(self.getMeasurement(2).AVG)
+            #print(ymin, ymax)        
+            new_vdiv = (ymax-ymin)/NDIV
+            new_offset = -(ymin+ymax)/2
+        
+        #restore parameters
+        self.send(old_params[0])
+        self.send(old_params[1])
+        self.clearSweeps()
+        
     def zoomCalibre(self):
         vdiv=self.getVal("VDIV?")
         vdiv=closerVal(float(vdiv))[0]
@@ -196,12 +246,17 @@ class OscilloWavePro:
             CH, ZM*float(ret.SIGMA), CH, -float(ret.AVG)))
 
 
-
-
+#USAGE for shell test (not import from python)
+#python drivers/OscilloWavePro.py -ip '192.168.0.48'
 if __name__ == '__main__':
     import readline
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-ip', default='192.168.0.47')
+    args = parser.parse_args()
+    ip=args.ip
     print("Si ca marche pas, un autre process doit etre en marche -> kill")
-    ws = OscilloWavePro('192.168.0.45')
+    ws = OscilloWavePro(ip)
     print("Connected ?")
     print  """    ____exemple:____    respond
     C1:VDIV?       #<== Voltage / division of channel 1
@@ -211,7 +266,8 @@ if __name__ == '__main__':
     C1:OFfSeT?     #<== OFST, gives the offset of channel 1
     PACU? 1        #<== reply how is set the parameter 1
     C2:TRA OFF     #<== disable 'Trace On' for C2 curve
-            # set manually a parameter then ask 'PACU? 1' what is the syntax
+    F1:DEF?        #<== syntax definition of math function
+    # set manually a parameter then ask 'PACU? 1' what is the syntax
     PACU 3, DDLY, C1, C2 #<== set param 1 as the delay between ch1 and ch2
     VBS 'app.Acquisition.Trigger.C2.Level=0.055' #<== more advanced features
     vbs 'app.SystemControl.CloseDialog' #<== close the bottom panel if opened
