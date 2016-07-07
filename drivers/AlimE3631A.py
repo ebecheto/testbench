@@ -1,4 +1,5 @@
 #! /usr/bin/python
+# -*- encoding: utf-8 -*-
 
 import serial, time
 
@@ -49,7 +50,29 @@ class AlimE3631A:
     def __del__(self):
         self.ser.close()
 
-    def currents(self):
+
+    def volts(self, nb=2):
+        ch=('P6V', 'P25V', 'N25V')
+        return [self.send("MEAS:VOLT? " + ch[i]) for i in range(nb)]
+    def volt(self, nb=2):
+        return ["{0:.2f}".format(float(i)) for i in self.volts(nb)]
+    def Volt(self, nb=2):
+        return [i+" V" for i in self.volt(nb)]
+
+    def idcs(self, nb=2):
+        ch=('P6V', 'P25V', 'N25V')
+        return [self.send("MEAS:CURR:DC? " + ch[i]) for i in range(nb)]
+    def idc(self, nb=2):
+        return ["{0:.3f}".format(float(i)) for i in self.idcs(nb)]
+    def Idc(self, nb=2):
+        return [i+" A" for i in self.idc(nb)]
+
+    def power(self, nb=2):
+        return ["{}V*{}A".format(self.volt(nb)[i], self.idc(nb)[i]) for i in range(nb)]
+
+        return [i+" A" for i in self.idc(nb)]
+
+    def currents(self):# old one to remove later
         i1=self.send("MEAS:CURR:DC? P6V")
         i2=self.send("MEAS:CURR:DC? P25V")
         i3=self.send("MEAS:CURR:DC? N25V")
@@ -62,6 +85,16 @@ class AlimE3631A:
 
     def RES(self):
         return self.send("MEAS:RES?").split(',')[2]
+
+    def res2temp(self, r):
+        return 6.76101314e-07*(r**3) + 7.62125457e-04*(r**2) + 2.38630456e+00*r - 2.46928114e+02
+
+    def temp(self):
+        return self.res2temp(float(self.RES()))
+    def temps(self):
+        return "{}".format(round(self.temp()))
+    def Temps(self):
+        return self.temps()+" °C"
 
     def TEMP2RES(self,T):
         return 100*(1+ 3.908e-3*T - 5.775e-7*T**2 + (0 if T > 0 else -4.183e-12)*(T-100)**3 )
@@ -82,6 +115,10 @@ class AlimE3631A:
             temp=(sup+inf)/2.0
             essai=self.TEMP2RES(temp)
         return round(temp)
+
+
+    def __del__(self):
+        self.send("SYST:LOC")
 
 
 if __name__ == '__main__':
