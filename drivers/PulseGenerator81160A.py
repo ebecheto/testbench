@@ -34,19 +34,29 @@ class PulseGenerator81160A:
     def setFrequency(self, freq):
         self.send("PULSe:FREQuency {}".format(freq))
 
-    def setTrail(self, edge):
-        self.send("PULSe:TRANsition1:TRAiling 1e-9 {}".format(edge))
+    def setTrail(self, edge='1e-6'):
+        """set Trailing edge to ie. 1us if edge="1e-6"
+        """
+        self.send("PULSe:TRANsition1:TRAiling {}".format(edge))
 
 
-
+#  " PULS:TRAN2:TRA"
 
 if __name__ == '__main__':    
+    import readline
+    readline.parse_and_bind("tab: complete")
     print 'Wait 8 seconds (slow to respond the 1st time)\n'
-    pg = PulseGenerator81160A('192.168.0.46', 5025)
+    pg = PulseGenerator81160A('192.168.0.47', 5025)
     print '''____exemple:____
              OUTPUT ON
-             OUTPUT2 OFF
+             OUTPUT?
+             OUTPut2 OFF
              VOLT 1.2
+             VOLT2?
+             PULS:TRAN2 1.2e-6   #<= set leading edge to 1.2us
+             PULS:TRAN2?         #<= gives the leading edge value
+             PULS:TRAN2:TRA 1e-6 #<= set trailing edge to 1us
+             OUTP2:COMP ON #<= Enable OUT2_ 'complementary'
              FREQ 1KHz'''
     print 'To (q)uit, type q\n'
     msg = "*IDN?"
