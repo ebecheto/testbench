@@ -67,10 +67,13 @@ class AlimE3631A:
     def Idc(self, nb=2):
         return [i+" A" for i in self.idc(nb)]
 
+    # def power(self, nb=2):
+    #     return ["{}V*{}A".format(self.volt(nb)[i], self.idc(nb)[i]) for i in range(nb)]
     def power(self, nb=2):
-        return ["{}V*{}A".format(self.volt(nb)[i], self.idc(nb)[i]) for i in range(nb)]
+        ch=('P6V', 'P25V', 'N25V')
+        return ["{:.3f}V*{:.3f}A".format(float(self.send("MEAS:VOLT? " + ch[i])), float(self.send("MEAS:CURR:DC? " + ch[i]))) for i in range(nb)]
+#         return [j for i in range(nb) for j in self.send("MEAS:VOLT? " + ch[i]), self.send("MEAS:CURR:DC? " + ch[i])]
 
-        return [i+" A" for i in self.idc(nb)]
 
     def currents(self):# old one to remove later
         i1=self.send("MEAS:CURR:DC? P6V")

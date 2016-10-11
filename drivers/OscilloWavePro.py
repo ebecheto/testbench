@@ -222,6 +222,13 @@ class OscilloWavePro:
             self.send("C{}:VDIV {}".format(CH, vdiv))
         return vdiv
 
+    def mkdir(self, dirname='D:\LARZIC\CH2'):
+        """ Danger, does not create parent direcory """
+        self.send("DIRectory DISK,HDD,ACTION,CREATE,'{}'".format(dirname))
+
+    def saveDir(self, dirname='D:\LARZIC\CH2'):
+        self.send("vbs 'app.SaveRecall.Waveform.WaveformDir=\"{}\"'".format(dirname))
+
     def saveCurve(self,CurvName="OUT", Curve=None):
         self.send("vbs 'app.SaveRecall.Waveform.SaveSource=\"{}\"'".format(Curve)) if Curve else None
         self.send("vbs 'app.SaveRecall.Waveform.TraceTitle=\"{}\"'".format(CurvName))
@@ -386,6 +393,7 @@ if __name__ == '__main__':
     F1:DEF?        #<== syntax definition of math function
     C1:ASET FIND   #<== put channel 1 in a window scale (offest and div)
     BUZZ BEEP; BUZZ BEEP #<== 2beep sound emitted by the scope
+    DIRectory DISK,HDD,ACTION,CREATE,'D:\LARZIC\CH2' #<== create directory
     # set manually a parameter then ask 'PACU? 1' what is the syntax
     PACU 3, DDLY, C1, C2 #<== set param 1 as the delay between ch1 and ch2
     VBS 'app.Acquisition.Trigger.C2.Level=0.055' #<== more advanced features

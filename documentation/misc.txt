@@ -4,6 +4,7 @@ LS_COLORS=`echo $LS_COLORS |sed 's/di=[0-9][0-9];[0-9][0-9]/di=01;94/'`
 nmap  -sP 192.168.0.0/24
 arp
 si pas dans le bon sous reseau essayer : nmap  -sP 192.168.0.0/16
+verifier eventuelement l'ouverture des ports : nmap 192.168.0.45 -p1-8081
 specifier l'adresse IP fixe du server dhcp dans /etc/network/interfaces
 modifier /etc/dhcp/dhcpd.conf en consequence
 lancer :$> sudo service isc-dhcp-server restart
