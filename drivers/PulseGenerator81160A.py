@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import socket,sys
+import socket,sys, errno
 
 class PulseGenerator81160A:
     BUFFER_SIZE = 1024
@@ -10,9 +10,11 @@ class PulseGenerator81160A:
         self.ip=ip
         self.port=port
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  
-        self.connect()
+#        self.connect()#<== now and then, connect need if using send. Otherwise, use senf into opened fifo from bypassPipe.py
         self.response = ""
-        self.idn = self.send("*IDN?")
+#        self.idn = self.send("*IDN?")
+        self.stdin  = None
+        self.stdout = None
         
     def __del__(self):
         self.s.close()
@@ -25,10 +27,28 @@ class PulseGenerator81160A:
             self.s.send(MESSAGE+"\n")
             if '?' in MESSAGE:
                 self.response = self.s.recv(self.BUFFER_SIZE)
-                return self.response.strip('\n')
+            return self.response.strip('\n')
         except socket.error as e:
             self.connect()
             self.send(MESSAGE)
+
+            
+    def senf(self,MESSAGE):
+        """
+        bypassPipe.py should be launch before in order to prevent 8sec connection of the pulser
+        os.mkfifo done in this files
+        writes goes to   /tmp/pipe_2pul_192.168.0.47 #<== if self.ip is this ip
+        reads comes from /tmp/pipe_2cli_192.168.0.47 #<== if self.ip is this ip
+        """
+        self.stdout  = open("/tmp/pipe_2pul_"+self.ip, 'w')
+        self.stdout.write(MESSAGE+"\n")
+        self.stdout.flush()
+        self.stdout.close()
+        
+        if '?' in MESSAGE:
+            self.stdin  = open("/tmp/pipe_2cli_"+self.ip, 'r', 0)#<== now fifo in listen mode wait bypass to close it
+            self.response = self.stdin.read()
+        return self.response
         
             
     def setFrequency(self, freq):
