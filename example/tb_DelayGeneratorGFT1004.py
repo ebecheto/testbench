@@ -11,7 +11,7 @@ max=3000
 step=100
 nb=max/step
 
-for i in range(nb):
+for i in range(nb+1):
     pul.setDelay(1,i*step)
     raw_input("{}/{} => {}[ns] delay. next={}".format(i, nb, i*step,i*(step+1)))
 
