@@ -1,208 +1,214 @@
 #!/usr/bin/env python
+# -*- coding: latin-1 -*
 import smbus, time
-
 # ls /dev/i2c-1  => smbus(1)
 bus=smbus.SMBus(1)
-# AT=0x21
-R3=0x23
-R8=0x27
 # address check with $>  i2cdetect -y 1
-# help(bus.read_byte_data)
-# help(bus.read_i2c_block_data)
+# 10: -- -- -- -- 14 15 16 17 -- -- -- -- -- -- -- 1f 
+# 20: -- -- -- -- 24 25 26 27 -- -- -- -- -- 2d -- -- 
 
-bus.write_byte_data(R3,0xff,0xff) # high logic
-bus.write_byte_data(R3,0x00,0x00) # low logic
-bus.write_byte_data(R8,0xff,0xff)
+TOP=[0x14, 0x15, 0x16, 0x17, 0x1f]
+BOT=[0x24, 0x25, 0x26, 0x27, 0x2d]
 
-bus.write_byte_data(R8,0xa7,0xe7)
-bus.read_byte(R8) #=> 167 == 0xa7
-bus.read_byte_data(R8,0xff,1)
-bus.read_i2c_block_data(R8, 0x0, 1)
-#ret=bus.read_byte_data(R8,0) #<== INNUTILISABLE avec gpioExpander NXP
-bus.read_i2c_block_data(R8, 0x0, 2) #<== mange des bits ?
-#=> [0, 35]#<= au lieu de [0, 231] ?
+# # help(bus.read_byte_data)
+# # help(bus.read_i2c_block_data)
+# [bus.write_byte_data(reg ,0x00,0x00) for reg in TOP]#=> outputs==0
+# [bus.write_byte_data(reg ,0xff,0xff) for reg in BOT]#=> inputs to be read
+# [bus.write_byte_data(reg ,0x11,0x01) for reg in TOP]#=> outputs==0 exept one
+# bus.read_byte(BOT[0]) 
+# bus.read_i2c_block_data(BOT[0], 0xff, 4) #<= WRITE first but 0xff mean input [OK]
 
-bus.write_byte_data(R8,0xff,0xff)
-bus.read_i2c_block_data(R8, 0xff, 4) #<== mange des bits ?
-# maybe not, since it is a floating input, it can be whatever right ?
-
-#bus.read_byte_data(R8,0xff)
-print  "0x{:02x}".format(167) #=> 0xa7
-print  "0x{:02x}".format(35) #=> 0x23
-print  "0x{:02d}".format(0xe7) #=> 231
+bus.read_i2c_block_data(BOT[0], 0xff, 2)
 
 
-# /!\ Fck*$$ing driver with the writing cmd
-# (in my case the device does not have cmd functionnality, and thus do not expect a write action before a read action.)
-
-# sudo sh -c 'echo N > /sys/module/i2c_bcm2708/parameters/combined'
-# sudo sh -c 'echo Y > /sys/module/i2c_bcm2708/parameters/combined'
-# does not change anything
-
-bus.write_byte_data(R8,0xff,0xff)
-bus.read_i2c_block_data(R8, 0, 1) 
-
-block = bus.read_i2c_block_data(R8, 0, 16) 
-print ret
-
-bus.write_byte_data(R3,0xaa,0x5e)
-read(R3)
+def read2bxd(r):
+    block = bus.read_byte(r)
+    print  "{:08b} | 0x{:02x} | {}".format(block,block,block)
 
 def read(r):
-    block = bus.read_i2c_block_data(r, 0, 2)
-    print  "{:08b} {:08b} | 0x{:02x}".format(block[0],block[1],block[1])
-
-
-def readP0(r):
-    block = bus.read_i2c_block_data(r, 0, 2)
-    print  "{:08b} {:08b} | 0x{:02x}".format(block[0],block[1],block[1])
-
-
-def readP1(r):
-    block = bus.read_i2c_block_data(r, 1, 2)
-    print  "{:08b} {:08b} | 0x{:02x}| 0x{:03d}".format(block[0],block[1],block[1],block[1])
-
-readP1(R3) ; readP1(R3)
-i=0
-bus.write_byte_data(R3,~(i>>1),0x00) ; i=i+1; read(R8)
-
-
-## i=0
-## mask=1<<i
-## #mask=~mask
-## M1=~mask
-## M2=~(mask>>8)
-## M3=~(mask>>16)
-## M4=~(mask>>32)
-## bus.write_byte_data(R1,M1,M2)
-## bus.write_byte_data(R2,M3,M4)
-## i+=1
-## i%= 1<<32
-## print i
-
-def closeAll():
-    bus.write_byte_data(R1,0xff,0xff)
-    bus.write_byte_data(R2,0xff,0xff)
-    bus.write_byte_data(R3,0xff,0xff)
-    bus.write_byte_data(R4,0xff,0xff)
-    bus.write_byte_data(R5,0xff,0xff)
-    bus.write_byte_data(R6,0xff,0xff)
-    bus.write_byte_data(R7,0xff,0xff)
-    bus.write_byte_data(R8,0xff,0xff)
+    block = bus.read_i2c_block_data(r, 0xff, 2)
+#    print("{:08b} 0x{:02x} | {:08b} 0x{:02x} ".format(block[0],block[0],block[1],block[1]))
+    return block
 
     
-off=0xff
-
-# Channel 1 est Y63 puis on tourne dans les aiguilles d'une montre
-
 
 def shift8 (i, rev=False):
     return ~(1<< (7-(i%8))) & 0xff if rev else ~(1<<(i%8)) & 0xff
 
 
-def regShift(i,r):
-    mask=0xFF
-    if  ( i< 1*8 and r==0 ) or (1*8 <= i< 2*8 and r==1) :
-        mask=shift8(i, 1)
-    return mask
+# # osbsolete
+# def regShift(i,r):
+#     mask=0xFF
+#     if  ( i< 1*8 and r==0 ) or (1*8 <= i< 2*8 and r==1) :
+#         mask=shift8(i, 1)
+#     return mask
 
-# verification
-[regShift(i,0) for i in range(16)]
-[regShift(i,1) for i in range(16)]
-
-["{:08b}".format(regShift(i,0)) for i in range(16)]
-["{:08b}".format(regShift(i,1)) for i in range(16)]
-
+# # verification
+# [regShift(i,0) for i in range(16)]
+# [regShift(i,1) for i in range(16)]
+# ["{:08b}".format(regShift(i,0)) for i in range(16)]
+# ["{:08b}".format(regShift(i,1)) for i in range(16)]
 
 
-## shift8(i, 1) # True
-## shift8(i, 0) # False
+def setOne(i, rev=False):
+    P0=0xff;P1=0xff
+    if  ( i< 1*8 ):
+        P0=shift8(i, rev)
+    elif (1*8 <= i< 2*8 ) :
+        P1=shift8(i, rev)
+    return [P0,P1] #<= return MSB first ? NO just fot printing latter
+# setOne(1)[0]
+#     setOne(1)[1]
 
+
+def setOne_check(rev=False):
+    ret=["{:08b} {:08b}".format(setOne(i,rev)[0],setOne(i,rev)[1]) for i in range(16)]
+    print "\n".join(ret)
+
+# setOne_check()     >>> setOne_check(True)
+# 11111110 11111111  01111111 11111111     
+# 11111101 11111111  10111111 11111111     
+# 11111011 11111111  11011111 11111111     
+# 11110111 11111111  11101111 11111111     
+# 11101111 11111111  11110111 11111111     
+# 11011111 11111111  11111011 11111111     
+# 10111111 11111111  11111101 11111111     
+# 01111111 11111111  11111110 11111111     
+# 11111111 11111110  11111111 01111111     
+# 11111111 11111101  11111111 10111111     
+# 11111111 11111011  11111111 11011111     
+# 11111111 11110111  11111111 11101111     
+# 11111111 11101111  11111111 11110111     
+# 11111111 11011111  11111111 11111011     
+# 11111111 10111111  11111111 11111101     
+# 11111111 01111111  11111111 11111110     
+
+
+def number2tik(num, tik='-'):
+    """Useful for pretty print read byte """
+    return ''.join(['x' if x=='0' else tik for x in list("{:08b}".format(num)) ])
+
+def number2x(num, tik='-'):
+    """Useful for viewing/checking writing pattern. 
+       Read does not have to be reversed! """
+    return ''.join(['x' if x=='0' else tik for x in list("{:08b}".format(num)) ][::-1]) #<== [::-1] for reverse printing => zero on left etc.
+
+def number2x_check():
+    for i in range(2**8):
+        print("{:3}:".format(i)+number2x(i)+"_"),
+        if (i+1)%8==0 :
+            print("_")
+
+# number2x_check()
+
+
+
+def shift8_check():
+    ret=["{:08b}".format(shift8(i)) for i in range(8)]
+    print "\n".join(ret)
+
+# shift8_check()
+
+def shift2out(i):
+    return [(1<<i)&0xFF,((1<<i)>>8)&0xFF ]
+
+# def shift2out_check():
+#     ret=["{:08b} {:08b}".format(shift2out(i)[0],shift2out(i)[1]) for i in range(16)]
+#     print "\n".join(ret)
+
+# shift2out_check()
+# Wrong, take setOne function
+
+def write(reg,i):
+    return bus.write_byte_data(reg ,setOne(i,True)[0],setOne(i,True)[1])
+
+
+# write(BOT[0],0) #<=[OK]
+# write(BOT[0],8) #<=[OK]
+
+expanders=range(5)
+#pins=range(16) #=> [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+
+[bus.write_byte_data(reg ,0x00,0x00) for reg in TOP]#=> outputs==0
+[bus.write_byte_data(reg ,0xff,0xff) for reg in BOT]#=> inputs to be read
+
+from math import floor
+
+for i, chip in enumerate(TOP):
+    print(floor(i), chip)
+
+# for pin in range(4):
+#     for nb,chip in enumerate(TOP):
+#         trunk=pin/16#<== integer division => natural floor
+#         # if nb==trunk :
+#         #     ret=pin>>(8*nb)
+#         config=pin>>8*nb if nb==trunk else 0xff
+#         print "write {} {} {:3} {:08b} {:08b}".format(pin, nb, config, setOne(config,1)[0], setOne(config,1)[1])
         
-def channelSelect (i):
-    """
-    numerotation arbitraire zero correspond a Y63, puis
-    sens des aiguilles d'une montre jusqu'a 127 (X1)
-    """
-#    assert(0<=i<128, "channel {} does not exist in [0-127]".format(i))
-    assert(0<=i<128)
-    closeAll() #<== close all relays
-    if   i< 1*8 :# bank1
-        mask=shift8(i, 1) ; bus.write_byte_data(R1,off,mask)
-    elif i< 2*8 :
-        mask=shift8(i, 1) ; bus.write_byte_data(R1,mask,off)
-    elif i< 3*8 :
-        mask=shift8(i, 1) ; bus.write_byte_data(R2,off, mask)
-    elif i< 4*8 :
-        mask=shift8(i, 1) ; bus.write_byte_data(R2,mask, off)
-    elif i< 5*8 :# bank2
-        mask=shift8(i, 0) ; bus.write_byte_data(R3,mask,off)
-    elif i< 6*8 :
-        mask=shift8(i, 1) ; bus.write_byte_data(R3,off,mask)
-    elif i< 7*8 :
-        mask=shift8(i, 0) ;  bus.write_byte_data(R4,mask,off)
-    elif i< 8*8 :
-        mask=shift8(i, 0) ;  bus.write_byte_data(R4,off,mask)
-    elif i< 9*8 :# bank3
-        mask=shift8(i, 0) ; bus.write_byte_data(R6,mask,off)
-    elif i< 10*8 :
-        mask=shift8(i, 0) ; bus.write_byte_data(R6,off,mask)
-    elif i< 11*8 :
-        mask=shift8(i, 1) ; bus.write_byte_data(R5,mask,off)
-    elif i< 12*8 :
-        mask=shift8(i, 1) ; bus.write_byte_data(R5,off,mask)
-    elif i< 13*8 :# bank4
-        mask=shift8(i, 0) ; bus.write_byte_data(R8,mask,off)
-    elif i< 14*8 :
-        mask=shift8(i, 0) ; bus.write_byte_data(R8,off,mask)
-    elif i< 15*8 :
-        mask=shift8(i, 0) ; bus.write_byte_data(R7,off,mask)
-    elif i< 16*8 :
-        mask=shift8(i, 0) ; bus.write_byte_data(R7,mask,off)
-    return mask
+# write 0 0   0 01111111 11111111
+# write 0 1 255 11111111 11111111
+# write 0 2 255 11111111 11111111
+# write 0 3 255 11111111 11111111
+# write 0 4 255 11111111 11111111
+# write 1 0   1 10111111 11111111
+# write 1 1 255 11111111 11111111
+# write 1 2 255 11111111 11111111
+# write 1 3 255 11111111 11111111
+# write 1 4 255 11111111 11111111
+# write 2 0   2 11011111 11111111
+# write 2 1 255 11111111 11111111
+# write 2 2 255 11111111 11111111
+# write 2 3 255 11111111 11111111
+# write 2 4 255 11111111 11111111
+# write 3 0   3 11101111 11111111
+# write 3 1 255 11111111 11111111
+# write 3 2 255 11111111 11111111
+# write 3 3 255 11111111 11111111
+# write 3 4 255 11111111 11111111
 
 
-# 1 DOIT ALLUMER y1
-# 2 DOIT ALLUMER y2 etc.
-# ...
-
-def channelSelectY(y):
-    if y % 2: # si impaire
-        channelSelect((63-y)/2)
-    else:
-        channelSelect((y/2)+63)
+def pin2write(pin):
+    for nb,chip in enumerate(TOP):
+        trunk=pin/16#<== integer division => natural floor
+        # if nb==trunk :
+        #     ret=pin>>(8*nb)
+        config=pin>>8*nb if nb==trunk else 0xff
+        write(chip, config)
 
 
-def channelSelectX(x):
-    if x % 2: # si impaire
-        channelSelect( (65-x)/2 + 95 )
-    else:
-        channelSelect( (x+62)/2 )
+chip=TOP[0]
+write(chip,9)
+rr=read(BOT[0])# => [127, 255]
+"{:08b} {:08b}".format(rr[0],rr[1])
+
+#=> '01111111'
+
+def readWrite(num,t,b):
+    write(TOP[t],num)
+    rr=read(BOT[b])# => [127, 255]
+    return "".join(map(number2tik, rr))
+
+readWrite(1,0,0)
+
+def pin2read(pin):
+    rd=[]
+    for nb,chip in enumerate(BOT):
+        rd.append(read(chip))
 
 
 
 
 
-
-
+# for chip in expanders :
+#     for pin in pins:
+#         write(TOP[chip],pin)
+#         read(BOT[chip])
+# #        raw_input()
         
 if __name__ == '__main__':
-
-    for i in range(1, 65):
-        time.sleep(0.4)
-        channelSelectX(i)
-
-    for i in range(1, 65):
-        time.sleep(0.4)
-        channelSelectY(i)
-
-# channelSelectY(1)
-        
-        
-##  chenillard
-    i=0 #8*8-1
-    for i in range(0, 128) :
-        mask=channelSelect(i); 
-        print i, i/8, "{:08b}".format(mask)
-        time.sleep(0.4)
-
+    
+    for chip in expanders :
+        for pin in pins:
+            write(TOP[chip],pin)
+            read(BOT[chip])
+    #        raw_input()
