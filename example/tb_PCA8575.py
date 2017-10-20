@@ -18,7 +18,7 @@ BOT=[0x24, 0x25, 0x26, 0x27, 0x2d]
 # bus.read_byte(BOT[0]) 
 # bus.read_i2c_block_data(BOT[0], 0xff, 4) #<= WRITE first but 0xff mean input [OK]
 
-bus.read_i2c_block_data(BOT[0], 0xff, 2)
+# bus.read_i2c_block_data(BOT[0], 0xff, 2)
 
 
 def read2bxd(r):
@@ -84,9 +84,17 @@ def setOne_check(rev=False):
 # 11111111 01111111  11111111 11111110     
 
 
-def number2tik(num, tik='-'):
+def number2tik(num, tik='-',rev=-1):
+    """Useful for pretty print read byte rev==-1 for reverse order"""
+    return ''.join(['x' if x=='0' else tik for x in list("{:08b}".format(num))[::rev] ])
+
+
+def number2tikx(num, tik='-'):
     """Useful for pretty print read byte """
-    return ''.join(['x' if x=='0' else tik for x in list("{:08b}".format(num)) ])
+    return ''.join(["{:1x}".format(num) if x=='0' else tik for x in list("{:08b}".format(num)) ])
+
+
+#[number2tikx(i) for i in range(16)]
 
 def number2x(num, tik='-'):
     """Useful for viewing/checking writing pattern. 
@@ -120,7 +128,8 @@ def shift2out(i):
 # Wrong, take setOne function
 
 def write(reg,i):
-    return bus.write_byte_data(reg ,setOne(i,True)[0],setOne(i,True)[1])
+    return bus.write_byte_data(reg ,setOne(i)[0],setOne(i)[1])
+#    return bus.write_byte_data(reg ,setOne(i,True)[0],setOne(i,True)[1])#reverse or not reverse that is the question
 
 
 # write(BOT[0],0) #<=[OK]
@@ -137,13 +146,13 @@ from math import floor
 for i, chip in enumerate(TOP):
     print(floor(i), chip)
 
-# for pin in range(4):
-#     for nb,chip in enumerate(TOP):
-#         trunk=pin/16#<== integer division => natural floor
-#         # if nb==trunk :
-#         #     ret=pin>>(8*nb)
-#         config=pin>>8*nb if nb==trunk else 0xff
-#         print "write {} {} {:3} {:08b} {:08b}".format(pin, nb, config, setOne(config,1)[0], setOne(config,1)[1])
+for pin in range(15,20,1):
+    for nb,chip in enumerate(TOP):
+        trunk=pin/16#<== integer division => natural floor
+        # if nb==trunk :
+        #     ret=pin>>(8*nb)
+        config=pin-16*nb if nb==trunk else 0xff
+        print "write {} {} {:3} {:08b} {:08b}".format(pin, nb, config, setOne(config,1)[0], setOne(config,1)[1])
         
 # write 0 0   0 01111111 11111111
 # write 0 1 255 11111111 11111111
@@ -167,14 +176,20 @@ for i, chip in enumerate(TOP):
 # write 3 4 255 11111111 11111111
 
 
-def pin2write(pin):
+def pin2write(pin,verb=False):
+    ret=[]
     for nb,chip in enumerate(TOP):
         trunk=pin/16#<== integer division => natural floor
         # if nb==trunk :
         #     ret=pin>>(8*nb)
-        config=pin>>8*nb if nb==trunk else 0xff
+        config=pin-16*nb if nb==trunk else 0xff
+        ret.append(config)
+        if verb:
+            print("{} {:08b}{:08b}".format(chip, setOne(config,1)[0], setOne(config,1)[1]))
         write(chip, config)
+    return ret
 
+#pin2write(15)
 
 chip=TOP[0]
 write(chip,9)
@@ -188,15 +203,24 @@ def readWrite(num,t,b):
     rr=read(BOT[b])# => [127, 255]
     return "".join(map(number2tik, rr))
 
-readWrite(1,0,0)
+# readWrite(1,0,0)
 
-def pin2read(pin):
+def pin2read():
     rd=[]
     for nb,chip in enumerate(BOT):
-        rd.append(read(chip))
+        rd.extend(read(chip))
+    return rd
 
+def prettyPrint(rpins):
+    print "".join(map(number2tik, rpins))
 
+def checkCable():
+    for i in range(80):
+        confs=pin2write(i)
+        rpins=pin2read()
+        prettyPrint(rpins)
 
+checkCable()
 
 
 # for chip in expanders :
@@ -205,10 +229,10 @@ def pin2read(pin):
 #         read(BOT[chip])
 # #        raw_input()
         
-if __name__ == '__main__':
+# if __name__ == '__main__':
     
-    for chip in expanders :
-        for pin in pins:
-            write(TOP[chip],pin)
-            read(BOT[chip])
-    #        raw_input()
+#     for chip in expanders :
+#         for pin in pins:
+#             write(TOP[chip],pin)
+#             read(BOT[chip])
+#     #        raw_input()
