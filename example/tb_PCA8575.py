@@ -215,24 +215,15 @@ def prettyPrint(rpins):
     print "".join(map(number2tik, rpins))
 
 def checkCable():
+    ret=[]
     for i in range(80):
         confs=pin2write(i)
         rpins=pin2read()
+        ret.append(rpins)
         prettyPrint(rpins)
+    return ret
 
-checkCable()
 
-
-# for chip in expanders :
-#     for pin in pins:
-#         write(TOP[chip],pin)
-#         read(BOT[chip])
-# #        raw_input()
+res=checkCable()
         
 # if __name__ == '__main__':
-    
-#     for chip in expanders :
-#         for pin in pins:
-#             write(TOP[chip],pin)
-#             read(BOT[chip])
-#     #        raw_input()
