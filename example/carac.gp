@@ -1,7 +1,11 @@
+<<<<<<< HEAD
 #! /usr/bin/gnuplot
 
 # USAGE : gnuplot -e "file='foo.data'" carac.gp
 if (!exists("file")) file=  './DONE_data_ISMN0D.txt'
+=======
+file=  './DONE_data_ISMN0D.txt' 
+>>>>>>> 0a7918fcf510ef8900b1cb2cbc77c032799acd55
 splot file with lines
 # set xtics 0.2; set xlabel rotate parallel;replot <= pas bon
 # set ytics 0.2 rotate by 90 right;replot
@@ -19,7 +23,11 @@ set grid mytics
 set grid back ls 81;replot
 set mxtics; set mytics
 
+<<<<<<< HEAD
 Vth=2
+=======
+Vth=0.6
+>>>>>>> 0a7918fcf510ef8900b1cb2cbc77c032799acd55
 # ($2==vgs;$1==vds)
 splot file u 1:2:($2>=Vth/2 && $2<=Vth ? $3:1/0) with lines,\
   file u 1:2:($2>=$1+Vth ? $3 : 1/0) with lines,\
@@ -99,8 +107,13 @@ set arrow 9 from 3.3,3.3,zval to 3.3,3.3,GPVAL_Z_MAX nohead lt 1 lc rgb '0xD3D3D
 set arrow 11 from 0,Vth,zval to 3.3-Vth,3.3,zval nohead;replot#<=vdsat projection
 set arrow 12 from 0,Vth,zval to 3.3,Vth,zval nohead;replot#<= sat/subth limit
 set arrow 13 from 0,Vth/2,zval to 3.3,Vth/2,zval nohead;replot#<= subth/blocked limit
+<<<<<<< HEAD
 set arrow 14 from 0,Vth,zval to 0,Vth,0 lt 5 nohead ;replot
 set arrow 15 from 3.3-Vth,3.3,zval to 3.3-Vth,3.3,Zlast nohead lt 5 ;replot
+=======
+set arrow 14 from 0,Vth,zval to 0,Vth,0 lt 5 nohead dt 3;replot
+set arrow 15 from 3.3-Vth,3.3,zval to 3.3-Vth,3.3,Zlast nohead lt 5 dt 3;replot
+>>>>>>> 0a7918fcf510ef8900b1cb2cbc77c032799acd55
 
 
 
@@ -130,7 +143,10 @@ pr nbE=position(XA-1,XB)
 set table
 plot file u 0:($0==nbA?(Ax=$1, Ay=$2, Az=$3):$0==nbB?(Bx=$1, By=$2, Bz=$3):$0==nbC?(Cx=$1, Cy=$2, Cz=$3):$0==nbD?(Dx=$1, Dy=$2, Dz=$3):$0==nbE?(Ex=$1, Ey=$2, Ez=$3):$3)
 unset table
+<<<<<<< HEAD
 exit
+=======
+>>>>>>> 0a7918fcf510ef8900b1cb2cbc77c032799acd55
 pr Ax, Ay, Az, Bx, By, Bz
 
 pr A=sprintf("%.1f,%.1f,%.1g" ,Ax,Ay,Az)
@@ -161,6 +177,7 @@ set label 2 at Ax*.9, Ay*.9, Az*.9 " A" font 'Verdana,12' ;replot
 
 set style line 82 pointtype 7 linecolor rgb '#22aa22' pointsize 2
 
+<<<<<<< HEAD
 mini=1e-9
 off=0.1
 #splot  file  with lines, "vdsat.dat", "diod.dat"
@@ -168,6 +185,14 @@ splot file u 1:2:($2>=Vth/2 && $2<=Vth ? ($3<mini? mini:$3):1/0) with lines,\
   file u 1:2:($2>=$1+Vth+off ? ($3<mini? mini:$3):1/0) with lines,\
   file u 1:2:($2<=$1+Vth+off && $2>=Vth ? ($3<mini? mini:$3):1/0) with lines,\
   file u 1:2:($2<=Vth/2.0+off ? ($3<mini? mini:$3):1/0) with lines, "vdsat.dat" title 'vds=vgs-vth' ps 0.5, "diod.dat" title 'vds=vgs' ps 0.2
+=======
+
+#splot  file  with lines, "vdsat.dat", "diod.dat"
+splot file u 1:2:($2>=Vth/2 && $2<=Vth ? $3:1/0) with lines,\
+  file u 1:2:($2>=$1+Vth ? $3:1/0) with lines,\
+  file u 1:2:($2<=$1+Vth && $2>=Vth ? $3:1/0) with lines,\
+  file u 1:2:($2<=Vth/2.0 ? $3:1/0) with lines, "vdsat.dat" title 'vds=vgs-vth' ps 0.5, "diod.dat" title 'vds=vgs' ps 0.2
+>>>>>>> 0a7918fcf510ef8900b1cb2cbc77c032799acd55
 
 #   ,\
 # '+' using ($1 == Ax ? Ax : NaN):Ay:Az:(sprintf('A(%.1f,%.1f,%.1f)', Ax,Ay,Az)) \
