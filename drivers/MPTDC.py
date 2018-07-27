@@ -18,6 +18,7 @@ class MPTDC:
         self.AT=AT
         self.spi=spidev.SpiDev()
         self.spi.open(0,0)
+        self.spi.max_speed_hz=10000
         self.bus=smbus.SMBus(1)
         self.bus.write_byte_data(self.AT ,0x6, 0x00)
         self.bus.write_byte_data(self.AT ,0x7, 0x00)
@@ -122,6 +123,26 @@ class MPTDC:
         self.setWBR(0)
         print("** RES="+str(self.RESULT)+" **")
         return self.RESULT 
+    
+    def setSlow(self, nb):
+        """nb va de 0 à 30 : 31 => pas de courant"""
+        for i in range(5):
+            bit=i; value=nb>>i&0x1
+            self.setROS(bit, value)
+    
+    def setFast(self, nb):
+        """nb va de 0 à 30 : 31 => pas de courant"""
+        for i in range(5):
+            bit=i; value=nb>>i&0x1
+            self.setROF(bit, value)
+    
+    def stop(self):
+        self.stay(0)# STOP
+        self.send()
+    
+    def start(self):
+        self.stay(1)# STOP
+        self.send()
 
 
 
