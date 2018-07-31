@@ -17,6 +17,7 @@ class MPTDC:
         self.port=0&0xff
         self.AT=AT
         self.spi=spidev.SpiDev()
+        self.spi_mode=1
         self.spi.open(0,0)
         self.spi.max_speed_hz=10000
         self.bus=smbus.SMBus(1)
@@ -97,6 +98,11 @@ class MPTDC:
         self.setBits()
         self.setPort()
     
+    def unset(self):
+        self.RST=0
+        self.setBits()
+        self.send()
+    
     def reset(self, tps=0.1):
         self.RST=0
         self.setBits()
@@ -120,6 +126,13 @@ class MPTDC:
     def read(self):
         self.setWBR(1)
         self.RESULT=self.spi.xfer2([0]*112)
+        self.setWBR(0)
+        print("** RES="+str(self.RESULT)+" **")
+        return self.RESULT 
+    
+    def read1(self):
+        self.setWBR(1)
+        self.RESULT=self.spi.xfer2([0])
         self.setWBR(0)
         print("** RES="+str(self.RESULT)+" **")
         return self.RESULT 
