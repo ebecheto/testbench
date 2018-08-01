@@ -37,6 +37,8 @@ class MPTDC:
         self.OE4_S	=0# D12
         self.RST    =1# D13
         self.RESULT=0
+        self.coarse=[]
+        self.counters=[]
         self.setBits()
         self.setPort()
     
@@ -156,6 +158,28 @@ class MPTDC:
     def start(self):
         self.stay(1)# STOP
         self.send()
+    
+    def check(self):
+        rio=self.bus.read_i2c_block_data(0x77, 0x0,2) #=> [0, 0]
+        if (self.port>>8 == rio[1]) & (self.port&0xff==rio[0]):
+            print("[OK]")
+        else:
+            print("port : {:08b} {:08b} !=\ngpio : {:08b} {:08b}\n".format(self.port>>8,self.port&0xff, rio[1],  rio[0]))
+    
+    def res2cnt(self, openDrain=True):
+        """ RESULTS -> binary 112x11-bit counter list """
+        mem="".join(["{:08b}".format(i) for i in self.RESULT])
+        openDrain=True
+        if openDrain:
+           mem="".join(["1" if bit=="0" else "0" for bit in list(mem)])
+        self.coarse=mem[0:5]
+        mem=mem[5:-1]
+        cnts=[]
+        while(mem):
+            cnts.append(mem[0:11])
+            mem=mem[11:-1]
+        self.counters=cnts
+        return self.counters
 
 
 
@@ -292,3 +316,4 @@ class MPTDC:
 #         raw_input("youhou {}{}".format(i, val))
 
         
+memo='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
