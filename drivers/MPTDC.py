@@ -129,7 +129,7 @@ class MPTDC:
         self.setWBR(1)
         self.RESULT=self.spi.xfer2([0]*112)
         self.setWBR(0)
-        print("** RES="+str(self.RESULT)+" **")
+#         print("** RES="+str(self.RESULT)+" **")
         return self.RESULT 
     
     def read1(self):
@@ -173,11 +173,11 @@ class MPTDC:
         if openDrain:
            mem="".join(["1" if bit=="0" else "0" for bit in list(mem)])
         self.coarse=mem[0:5]
-        mem=mem[5:-1]
+        mem=mem[5:]
         cnts=[]
         while(mem):
             cnts.append(mem[0:11])
-            mem=mem[11:-1]
+            mem=mem[11:]
         self.counters=cnts
         return self.counters
 
