@@ -27,6 +27,7 @@ class DelayGeneratorGFT1004:
             self.s.send(MESSAGE+'\n')
             if '?' in MESSAGE:
                 self.response = self.s.recv(DelayGeneratorGFT1004.BUFFER_SIZE).strip()
+                return self.response
         except socket.error as e:
             print e
             self.connect()
@@ -47,10 +48,11 @@ class DelayGeneratorGFT1004:
         
 if __name__ == "__main__":
     import time
-    g = DelayGeneratorGFT1004('192.168.0.43')
+#    g = DelayGeneratorGFT1004('192.168.0.43')
+    g = DelayGeneratorGFT1004('169.254.222.43')
     g.send("*IDN?")
     print g.response
     while True:
-        msg = raw_input()
+        msg = raw_input("> ")
         g.send(msg)
         print g.response

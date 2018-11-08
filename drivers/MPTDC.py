@@ -125,10 +125,11 @@ class MPTDC:
         self.setBits()
         self.send()
     
-    def read(self):
+    def read(self, openDrain=True):
         self.setWBR(1)
         self.RESULT=self.spi.xfer2([0]*112)
         self.setWBR(0)
+        self.res2cnt(openDrain=True)
 #         print("** RES="+str(self.RESULT)+" **")
         return self.RESULT 
     
@@ -141,22 +142,20 @@ class MPTDC:
     
     def setSlow(self, nb):
         """nb va de 0 à 30 : 31 => pas de courant"""
-        for i in range(5):
-            bit=i; value=nb>>i&0x1
-            self.setROS(bit, value)
+        [self.OE0_S, self.OE1_S, self.OE2_S, self.OE3_S, self.OE4_S]=[nb>>0&0x1,nb>>1&0x1,nb>>2&0x1,nb>>3&0x1,nb>>4&0x1 ]
+        self.setBits()
     
     def setFast(self, nb):
         """nb va de 0 à 30 : 31 => pas de courant"""
-        for i in range(5):
-            bit=i; value=nb>>i&0x1
-            self.setROF(bit, value)
+        [self.OE0_F, self.OE1_F, self.OE2_F, self.OE3_F, self.OE4_F]=[nb>>0&0x1,nb>>1&0x1,nb>>2&0x1,nb>>3&0x1,nb>>4&0x1 ]
+        self.setBits()
     
     def stop(self):
         self.stay(0)# STOP
         self.send()
     
     def start(self):
-        self.stay(1)# STOP
+        self.stay(1)# START : RO_stop a 1
         self.send()
     
     def check(self):
@@ -172,7 +171,7 @@ class MPTDC:
         openDrain=True
         if openDrain:
            mem="".join(["1" if bit=="0" else "0" for bit in list(mem)])
-        self.coarse=mem[0:5]
+        self.coarse=mem[0:5][::-1]
         mem=mem[5:]
         cnts=[]
         while(mem):
@@ -180,13 +179,30 @@ class MPTDC:
             mem=mem[11:]
         self.counters=cnts
         return self.counters
+    
+    def reload(self):
+        self.stop()
+        self.reset()
+        self.setSlow(17)
+        self.setFast(23)
+        self.pp()
+        self.start()
+    
+    
+    def reverse_bit(num):
+        result = 0
+        while num:
+            result = (result << 1) + (num & 1)
+            num >>= 1
+        return result
+        
 
 
 
 
 # tdc=MPTDC()
 # tdc.OE0_F=1
-# tdc.setBits()
+# tdc.se
 # tdc.setROS(0,1)
 # tdc.pp()
 # tdc.send()
@@ -316,4 +332,6 @@ class MPTDC:
 #         raw_input("youhou {}{}".format(i, val))
 
         
-memo='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+# memo='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+
+
