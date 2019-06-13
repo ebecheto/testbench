@@ -123,25 +123,34 @@ def pin2read():
 def prettyPrint(rpins):
     print "".join(map(number2tik, rpins))
 
-def checkCable(Nmax):
-    ret=[]
+
+#        print("{:02d}|{:02d}|".format(i+1,Nmax-i)),
+
+def checkCable(Nmax=40,Position=True):
+    ret=[]; noConn=[]; rpins=[]; confs=[]
     for i in range(Nmax):
         confs=pin2write(i)
         rpins=pin2read()
         ret.append(rpins)
-        print("{:02d}|{:02d}|".format(i+1,Nmax-i)),
+        pos=i+1 if Position else i+25
+        if rpins==[255, 255, 255, 255, 255, 255, 255, 255, 255, 255] :
+            noConn.append(pos)
+        print("{:02d}|".format(pos)),
         prettyPrint(rpins)
+    print("No connections on row :{}".format(noConn))
     return ret
 
 
 #res=checkCable() #=> test 80-pins
-res=checkCable(40)
+res=checkCable(40,0)
+print("res=checkCable(40)")
+print("res=checkCable(40, 0)")
 
 npres=np.array(res)
 #np.savetxt('hex_4R.txt', npres, fmt='%.3d')
-np.savetxt('hex_4L.txt', npres, fmt='%.3d')
-np.savetxt('hex_2L.txt', npres, fmt='%.3d')
-np.savetxt('hex_2R.txt', npres, fmt='%.3d')
+#np.savetxt('hex_4L.txt', npres, fmt='%.3d')
+#np.savetxt('hex_2L.txt', npres, fmt='%.3d')
+#np.savetxt('hex_2R.txt', npres, fmt='%.3d')
 
 
 
