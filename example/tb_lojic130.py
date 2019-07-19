@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import spidev,time
+from lmk_conf import *
+
 
 spi=spidev.SpiDev()
 # import os; os.system("sudo modprobe  spi-bcm2835")
@@ -27,12 +29,20 @@ GPIO.output(CS,0)
 spi.xfer2([0b01110010, 0xaa])
 GPIO.output(CS,1)
 
+# >>> bin(ord('w'))
+# '0b1110111'
+# >>> "0b{0:08b}".format(ord('w'))
+# '0b01110111'
+# >>> "0b{0:08b}".format(ord('r'))
+# '0b01110010'
+
 
 
 def send(reg, data=0xfa, CS=CS1 ):
     GPIO.output(CS,0)
     spi.xfer2([0b01110010, reg, data])
     GPIO.output(CS,1)
+        
 
 def read(x, CS=CS1):
     GPIO.output(CS,0)
@@ -41,8 +51,55 @@ def read(x, CS=CS1):
     GPIO.output(CS,1)
     return res
 
+# maybe xfer2 filled with 0x00, wil provok a read for the third byte, and return the value directly    spi.xfer2([0b01110111, x])
+# spi.xfer2([0xb0, 0xD9, 0x00, 0x00]) gives four returned values; last two should be data/
+
+
 send(1)
 read(1)
+
+
+# "0b".join(tableau[0][::-1])
+
+# row="0b"+"".join([str(i) for i in tableau[0][::-1]]) #<== reverse list for MSB first send
+# >>> by1, by2, by3, by4 = struct.pack('<I', eval(row))
+# >>> ord(by2)
+# 64
+# >>> bin(ord(by2))
+# '0b1000000' #<== OK
+# >>> row
+# '0b00000000000000000100000000000000'
+# '0b 00000000 00000000 01000000 00000000'
+
+# row="0b"+"".join([str(i) for i in tableau[0][::-1]]) #<== reverse list for MSB first send NONON NON
+
+row="0b"+"".join([str(i) for i in tableau[12]])
+list(bytearray(struct.pack('<I', eval(row))))
+
+# spi.xfer2(list(bytearray(struct.pack('<I', eval(row)))))
+# # OK
+
+# spi.xfer2(['0b10110111'])
+# >>> spi.lsbfirst
+# False #<= [OK] verif au scope   _|™|_|™™|_|™™™|_
+
+
+# from lmk_conf import *
+import struct
+
+reg=tableau[12]
+
+def conf(regs ):
+    for reg in regs:
+        row="0b"+"".join([str(i) for i in reg])  #<= '0b01010101010101010000000000000111'
+        b8x4=list(bytearray(struct.pack('<I', eval(row))))   #<= [7, 0, 85, 85]
+        spi.xfer2(b8x4)
+        GPIO.output(LMK,1)
+        GPIO.output(LMK,0)
+
+conf(tableau)
+
+
 
 
 # send(0b11000000, CS3)
