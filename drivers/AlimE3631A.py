@@ -71,7 +71,7 @@ class AlimE3631A:
 
     def imA(self):
         return "{}[mA]".format(round(eval(alim.send("MEAS:CURR:DC? P6V"))*1e3)
-    
+
     def RES(self):
         return self.send("MEAS:RES?").split(',')[2]
 
