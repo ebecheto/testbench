@@ -25,9 +25,9 @@ CS1, CS2, CS3, LMK=0, 5, 6, 13
 ASIC=True
 [GPIO.setup(CS, GPIO.OUT) for CS in CS1, CS2, CS3, LMK]
 
-GPIO.output(CS,0)
-spi.xfer2([0b01110010, 0xaa])
-GPIO.output(CS,1)
+# GPIO.output(CS,0)
+# spi.xfer2([0b01110010, 0xaa])
+# GPIO.output(CS,1)
 
 # >>> bin(ord('w'))
 # '0b1110111'
@@ -51,47 +51,49 @@ def read(x, CS=CS1):
     GPIO.output(CS,1)
     return res
 
+# send(1)
+# read(1)
+
 # maybe xfer2 filled with 0x00, wil provok a read for the third byte, and return the value directly    spi.xfer2([0b01110111, x])
 # spi.xfer2([0xb0, 0xD9, 0x00, 0x00]) gives four returned values; last two should be data/
+# [A TESTER]
+# def read(x, CS=CS1):
+#     GPIO.output(CS,0)
+#     res=spi.xfer2([0b01110111, x, 0x00, 0x00])
+#     GPIO.output(CS,1)
+#     return res[2::]
 
 
-send(1)
-read(1)
 
-
-# "0b".join(tableau[0][::-1])
-
-# row="0b"+"".join([str(i) for i in tableau[0][::-1]]) #<== reverse list for MSB first send
-# >>> by1, by2, by3, by4 = struct.pack('<I', eval(row))
-# >>> ord(by2)
-# 64
-# >>> bin(ord(by2))
-# '0b1000000' #<== OK
-# >>> row
-# '0b00000000000000000100000000000000'
-# '0b 00000000 00000000 01000000 00000000'
-
-# row="0b"+"".join([str(i) for i in tableau[0][::-1]]) #<== reverse list for MSB first send NONON NON
-
-row="0b"+"".join([str(i) for i in tableau[12]])
-list(bytearray(struct.pack('<I', eval(row))))
-
-# spi.xfer2(list(bytearray(struct.pack('<I', eval(row)))))
-# # OK
+# row="0b"+"".join([str(i) for i in tableau[12]])
+# list(bytearray(struct.pack('<I', eval(row))))
 
 # spi.xfer2(['0b10110111'])
 # >>> spi.lsbfirst
 # False #<= [OK] verif au scope   _|™|_|™™|_|™™™|_
 
+import AlimE3631A
+alim=AlimE3631A.AlimE3631A("/dev/ttyUSB0")
 
 # from lmk_conf import *
 import struct
+# np.array(["0b"+"".join([str(i) for i in reg]) for reg in tableau]) #<= view
 
-reg=tableau[12]
+# reg=tableau[12]
+# reg=tableau[24]
+# row="0b"+"".join([str(i) for i in reg])  #<= '0b01010101010101010000000000000111'
+# b8x4=list(bytearray(struct.pack('<I', eval(row))))   #<= [7, 0, 85, 85]
+# spi.xfer2(b8x4)
+# GPIO.output(LMK,1)
+# GPIO.output(LMK,0)
+
 
 def conf(regs ):
+    k=0
     for reg in regs:
+        k=k+1
         row="0b"+"".join([str(i) for i in reg])  #<= '0b01010101010101010000000000000111'
+        raw_input("reg{:2}, {}, {}".format(k,row,alim.imA()))
         b8x4=list(bytearray(struct.pack('<I', eval(row))))   #<= [7, 0, 85, 85]
         spi.xfer2(b8x4)
         GPIO.output(LMK,1)
@@ -99,66 +101,27 @@ def conf(regs ):
 
 conf(tableau)
 
+def readLMK(reg):
+        ret=spi.xfer2([0,reg,0,31,0,0,0,0])
+        GPIO.output(LMK,1)
+        GPIO.output(LMK,0)
+#        return ret[4::]
+        return ret
+
+readLMK(13)
 
 
 
-# send(0b11000000, CS3)
-# # enable all chip, and activate bus (Dzi, Dki) for ASIC config
-# # 1 chip has 16-channel => 0xFF,0xFF 
-# # chip     top ,2nd ,3rd , down
-# spi.mode=0
-# spi.xfer2([0xff,0Xff,0xff, 0xff,0xff,0Xff,0xff, 0xff])
-# spi.xfer2([0xFF for i in range(8)]) #<== CSTIM ALL
-# spi.xfer2([0 for i in range(8)])    #<== disabl calibration injection
+# REGISTRE 12 : test LED LD_MUX of Ftest/LD pin
+def lightOFF():
+    GPIO.output(LMK,0)
+    spi.xfer2([3,0,0,12]) #=>
+    GPIO.output(LMK,1);GPIO.output(LMK,0)
 
+def lightON():
+    GPIO.output(LMK,0)
+    spi.xfer2([4,0,0,12])
+    GPIO.output(LMK,1);GPIO.output(LMK,0)
 
-
-# #[spi.xfer2([i]) for i in range(17)]
-# for i in range(32):
-#     spi.xfer2([i])
-#     print i
-#     time.sleep(0.1)
-
-
-
-# #[spi.xfer2([i]) for i in range(17)]
-# for i in range(32):
-#     null=spi.xfer2([i])
-#     null=raw_input("[{}]next:1".format(i))
-
-# ___________________________________________________________________________
-# >>> ord('a')  ## chr(ord('a')+4)
-# 97
-# >>> hex(ord('a'))
-# '0x61'
-# >>> bin(ord('a'))
-# '0b1100001'
-# for i in range(7):
-#     print bin(1<<i).zfill(8)
-#'{:08b}'.format(7)
-
-# n=1<<10
-# print n, ~n, bin(~n&0xFFFF)
-
-
-# disableOne=[]
-# for i in range(64):
-#     nbit=~(1<<i)&0xFFFFFFFFFFFFFFFF
-#     print "{:2}".format(i), bin(~(1<<i)&0xFFFFFFFFFFFFFFFF), nbit
-#     disableOne=disableOne+[nbit]
-
-# # disableOne[::-1]#<== reverse list construct
-# b=disableOne[::-1]
-# test=disableOne[2]
-# test=b[2]
-
-
-# bin(test)
-# hash8rev=[]
-# for i in [8*i for i in range(8)]:
-#     hash8rev=hash8rev+[(test>>i)&0xFF]
-#     print bin((test>>i)&0xFF),
-
-# hash8=hash8rev[::-1]
-
-# spi.xfer2[hsh8]
+lightON()
+lightOFF()
