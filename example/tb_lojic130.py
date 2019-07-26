@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 import spidev,time
 from lmk_conf import *
+#from lmk_conf2 import *
 
 
 spi=spidev.SpiDev()
@@ -44,15 +45,12 @@ def send(reg, data=0xfa, CS=CS1 ):
     GPIO.output(CS,1)
         
 
-def read(x, CS=CS1):
-    GPIO.output(CS,0)
-    spi.xfer2([0b01110111, x])
-    res=spi.readbytes(1)
-    GPIO.output(CS,1)
-    return res
-
-# send(1)
-# read(1)
+# def read(x, CS=CS1):
+#     GPIO.output(CS,0)
+#     spi.xfer2([0b01110111, x])
+#     res=spi.readbytes(1)
+#     GPIO.output(CS,1)
+#     return res
 
 # maybe xfer2 filled with 0x00, wil provok a read for the third byte, and return the value directly    spi.xfer2([0b01110111, x])
 # spi.xfer2([0xb0, 0xD9, 0x00, 0x00]) gives four returned values; last two should be data/
@@ -64,6 +62,9 @@ def read(x, CS=CS1):
     GPIO.output(CS,1)
     return res[2::]
 
+send(1)
+read(1)
+
 
 
 # row="0b"+"".join([str(i) for i in tableau[12]])
@@ -74,7 +75,9 @@ def read(x, CS=CS1):
 # False #<= [OK] verif au scope   _|™|_|™™|_|™™™|_
 
 import AlimE3631A
+# [A COMMENTER S'il N'Y A PAS D'aLIM CONNECTé]
 alim=AlimE3631A.AlimE3631A("/dev/ttyUSB0")
+# [A COMMENTER S'il N'Y A PAS D'aLIM CONNECTé]
 
 # from lmk_conf import *
 import struct
@@ -95,13 +98,15 @@ def conf(regs, verb=True):
     for reg in regs:
         k=k+1
         row="0b"+"".join([str(i) for i in reg])  #<= '0b01010101010101010000000000000111'
-        raw_input("reg{:2}, {}, {}".format(k,row,alim.imA())) if verb else time.sleep(0.01)
+        raw_input("WC: {:2}, {}, {}".format(k,row,alim.imA())) if verb else time.sleep(0.05)
         b8x4=list(bytearray(struct.pack('>I', eval(row))))
         spi.xfer2(b8x4)
         GPIO.output(LMK,1)
         GPIO.output(LMK,0)
 
 conf(tableau, 0) # <= non-verbeux avec ', 0'  #=> marche pas ? trop rapide ?
+
+# conf([tableau[17]]) #<== Envoie la Write Commande 17 du tableau 
 
 def reg2b(regList):
         return "0b"+"".join([str(i) for i in regList])
