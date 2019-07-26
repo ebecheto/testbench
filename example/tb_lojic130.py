@@ -57,11 +57,12 @@ def read(x, CS=CS1):
 # maybe xfer2 filled with 0x00, wil provok a read for the third byte, and return the value directly    spi.xfer2([0b01110111, x])
 # spi.xfer2([0xb0, 0xD9, 0x00, 0x00]) gives four returned values; last two should be data/
 # [A TESTER]
-# def read(x, CS=CS1):
-#     GPIO.output(CS,0)
-#     res=spi.xfer2([0b01110111, x, 0x00, 0x00])
-#     GPIO.output(CS,1)
-#     return res[2::]
+
+def read(x, CS=CS1):
+    GPIO.output(CS,0)
+    res=spi.xfer2([0b01110111, x, 0x00, 0x00])
+    GPIO.output(CS,1)
+    return res[2::]
 
 
 
@@ -87,26 +88,77 @@ import struct
 # GPIO.output(LMK,1)
 # GPIO.output(LMK,0)
 
+# [ AVERIFIER!!!!!!!] J'ai inversé des données à envoyer a cause de la commande struc.pack  <I, C'est I> qu'il faut prendre : 
 
-def conf(regs ):
+def conf(regs, verb=True):
     k=0
     for reg in regs:
         k=k+1
         row="0b"+"".join([str(i) for i in reg])  #<= '0b01010101010101010000000000000111'
-        raw_input("reg{:2}, {}, {}".format(k,row,alim.imA()))
-        b8x4=list(bytearray(struct.pack('<I', eval(row))))   #<= [7, 0, 85, 85]
+        raw_input("reg{:2}, {}, {}".format(k,row,alim.imA())) if verb else time.sleep(0.01)
+        b8x4=list(bytearray(struct.pack('>I', eval(row))))
         spi.xfer2(b8x4)
         GPIO.output(LMK,1)
         GPIO.output(LMK,0)
 
-conf(tableau)
+conf(tableau, 0) # <= non-verbeux avec ', 0'  #=> marche pas ? trop rapide ?
+
+def reg2b(regList):
+        return "0b"+"".join([str(i) for i in regList])
+
+# sbit2b(tableau[13]) #=> '0b01010101010101010000000000001000'
+
+def bit2Byte(row='0b01010101010101010000000000001000'):
+    return list(bytearray(struct.pack('>I', eval(row))))
+
+# bit2Byte() #=> [85, 85, 0, 8]
+# bit2Byte(sbit2b(tableau[13])) #=> [85, 85, 0, 8]
+
+def bytes2bit(by=[3,0,0,12]):
+    return list("".join((["{:08b}".format(b) for b in by])))
+
+# reg2b(bytes2bit())  #=>  '0b00000011000000000000000000001100'
+
+# reg2b(bytes2bit(readLMK(13)))
+# ["{:08b}".format(b) for b in readLMK(13)]
+
+def printRegTab(tableau):
+    print("WC means Write Cycle")
+    tabList=["0b"+"".join([str(i) for i in reg]) for reg in tableau]
+    for i, line in enumerate(tabList):
+        print("WC{:2d}|{}|R{}|{}".format(i+1, line, eval(line)&0x1f, bit2Byte(line)))
+
+printRegTab(tableau)
+
+
+# ON OFF VERIF WITH BIT_ARRAY
+["{:08b}".format(b) for b in [4,0,0,12]] #=>["{:08b}".format(b) for b in [4,0,0,12]]
+on=list("".join((["{:08b}".format(b) for b in [4,0,0,12]]))) #=>['0','0','0','0','0','1','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','1','1','0','0']
+off=list("".join((["{:08b}".format(b) for b in [3,0,0,12]])))
+
+# conf([on], 0)
+# conf([off], 0)
+
+
+
+# def readLMK(reg):
+#         ret=spi.xfer2([0,reg,0,31,0,0,0,0])
+#         GPIO.output(LMK,1)
+#         GPIO.output(LMK,0)
+# #        return ret[4::]
+# # J'ai l'impression qu'il faut faire tomber les Chip Select avant de pousser les zeros de relecture
+#         return ret
+
 
 def readLMK(reg):
-        ret=spi.xfer2([0,reg,0,31,0,0,0,0])
-        GPIO.output(LMK,1)
-        GPIO.output(LMK,0)
-#        return ret[4::]
-        return ret
+    # documentation says last 5 bit (adrres) are inconsistant => to removed, or lets put back the adress value
+    spi.xfer2([0,reg,0,31])
+    GPIO.output(LMK,1)
+    GPIO.output(LMK,0)
+    ret=spi.xfer2([0,0,0,0])
+    # J'ai l'impression qu'il faut faire tomber les Chip Select avant de pousser les zeros de relecture. OUI
+#    return ret[::-1] #<= bytes reversed car lecture MSB First. 
+    return ret
 
 readLMK(13)
 
