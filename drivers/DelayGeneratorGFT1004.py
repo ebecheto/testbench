@@ -50,6 +50,9 @@ if __name__ == "__main__":
     g = DelayGeneratorGFT1004('192.168.0.43')
     g.send("*IDN?")
     print g.response
+    print """
+    Try :  LSS;SS1  #<= does that do single shot ?
+    """
     while True:
         msg = raw_input()
         g.send(msg)
