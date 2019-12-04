@@ -16,15 +16,24 @@ spi.open(0,0)
 spi.max_speed_hz=100000 #<= 100k
 #spi.max_speed_hz=500000 #<= 500k
 #spi.mode=0b10 #<== mode 2 : Chip select Down, data on clock falling edge
-#spi.max_speed_hz=1000000 #<= 1M
+# spi.max_speed_hz=1000000 #<= 1M
 # spi.lsbfirst = False
 
 
 import RPi.GPIO as GPIO
 GPIO.setmode(GPIO.BCM)
-CS1, CS2, CS3, LMK=0, 5, 6, 13
+CS1, CS2, CS3, LMK, RST=0, 5, 6, 13, 19
 ASIC=True
-[GPIO.setup(CS, GPIO.OUT) for CS in CS1, CS2, CS3, LMK]
+#GPIO.setup(CS1, GPIO.OUT)
+[GPIO.setup(CS, GPIO.OUT) for CS in CS1, CS2, CS3, LMK, RST]
+[GPIO.output(CS, 1) for CS in CS1, CS2, CS3]
+# RESET ASIC SPI, trig on 'posedge'
+GPIO.output(RST,0)
+GPIO.output(RST,1)
+GPIO.output(RST,0)
+
+GPIO.output(CS3, 0)
+GPIO.output(CS3, 1)
 
 # GPIO.output(CS,0)
 # spi.xfer2([0b01110010, 0xaa])
@@ -39,9 +48,20 @@ ASIC=True
 
 
 
+# def send(reg, data=0xfa, CS=CS1 ):
+#     GPIO.output(CS,0)
+#     spi.xfer2([0b01110010, reg, data])
+#     GPIO.output(CS,1)
+
 def send(reg, data=0xfa, CS=CS1 ):
     GPIO.output(CS,0)
-    spi.xfer2([0b01110010, reg, data])
+    spi.xfer2([0b01110111])
+    # GPIO.output(CS,1)
+    # GPIO.output(CS,0)
+    spi.xfer2([reg])
+    # GPIO.output(CS,1)
+    # GPIO.output(CS,0)
+    spi.xfer2([data])
     GPIO.output(CS,1)
         
 
@@ -57,14 +77,22 @@ def send(reg, data=0xfa, CS=CS1 ):
 # [A TESTER]
 
 def read(x, CS=CS1):
-    GPIO.output(CS,0)
-    res=spi.xfer2([0b01110111, x, 0x00, 0x00])
+    GPIO.output(CS,0);res=[]
+    res.append(spi.xfer2([0b01110010]))
+    # GPIO.output(CS,1)
+    # GPIO.output(CS,0)
+    res.append(spi.xfer2([x]))
+    # GPIO.output(CS,1)
+    # GPIO.output(CS,0)
+    res.append(spi.xfer2([0x00,0x00]))
     GPIO.output(CS,1)
-    return res[2::]
+#    return res[2::]
+    return res
 
-send(1)
-read(1)
-
+# while 1:
+#     send(0xaa)
+#     r=read(1)
+#     print r
 
 
 # row="0b"+"".join([str(i) for i in tableau[12]])
@@ -104,7 +132,8 @@ def conf(regs, verb=True):
         GPIO.output(LMK,1)
         GPIO.output(LMK,0)
 
-conf(tableau, 0) # <= non-verbeux avec ', 0'  #=> marche pas ? trop rapide ?
+#conf(tableau, 0) # <= non-verbeux avec ', 0'  #=> marche pas ? trop rapide ?
+conf(tableau, 1) # <= non-verbeux avec ', 0'  #=> marche pas ? trop rapide ?
 
 # conf([tableau[17]]) #<== Envoie la Write Commande 17 du tableau 
 
@@ -165,7 +194,7 @@ def readLMK(reg):
 #    return ret[::-1] #<= bytes reversed car lecture MSB First. 
     return ret
 
-readLMK(13)
+#readLMK(13)
 
 
 
@@ -182,3 +211,32 @@ def lightON():
 
 lightON()
 lightOFF()
+
+# configurationdes bits des 8 registre de l'ASIC
+send(0,0b00010001, CS3)
+send(1,0b11000000, CS3)
+send(2,0b10111111, CS3)
+#send(3,0b00000101, CS3)
+send(3,0b00011101, CS3)
+send(4,0b10000000, CS3)
+send(5,0b11111111, CS3)
+send(6,0b11111111, CS3)
+send(7,0b11111111, CS3)
+
+
+for i in range(8):
+    print(read(i, CS3))
+
+print "** QUIT() MADE exprès **"
+quit();#<== stop python -i
+GPIO.output(RST,0)
+GPIO.output(RST,1)
+GPIO.output(RST,0)
+send(7,0b11111111, CS3)
+read(7, CS3)
+
+
+# while 1:
+#     send(1,0b11000000, CS3)
+#     r=read(1)
+#     print r
