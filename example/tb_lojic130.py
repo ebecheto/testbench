@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import spidev,time
+import spidev, time, struct
 from lmk_conf import *
 #from lmk_conf2 import *
 
@@ -108,18 +108,19 @@ alim=AlimE3631A.AlimE3631A("/dev/ttyUSB0")
 # [A COMMENTER S'il N'Y A PAS D'aLIM CONNECTé]
 
 # from lmk_conf import *
-import struct
+
 # np.array(["0b"+"".join([str(i) for i in reg]) for reg in tableau]) #<= view
 
 # reg=tableau[12]
 # reg=tableau[24]
 # row="0b"+"".join([str(i) for i in reg])  #<= '0b01010101010101010000000000000111'
 # b8x4=list(bytearray(struct.pack('<I', eval(row))))   #<= [7, 0, 85, 85]
+# b8x4=list(bytearray(struct.pack('>I', eval(row))))   #<= [85, 85, 0, 7]
 # spi.xfer2(b8x4)
 # GPIO.output(LMK,1)
 # GPIO.output(LMK,0)
 
-# [ AVERIFIER!!!!!!!] J'ai inversé des données à envoyer a cause de la commande struc.pack  <I, C'est I> qu'il faut prendre : 
+# [ AVERIFIER!!!!!!!] J'ai inversé des données à envoyer a cause de la commande struc.pack  <I, C'est >I qu'il faut prendre : 
 
 def conf(regs, verb=True):
     k=0
