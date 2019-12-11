@@ -1,0 +1,197 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<!-- Created by htmlize-1.37 in css mode. -->
+<html>
+  <head>
+    <title>bitBang_CLOKC_SC.py</title>
+    <style type="text/css">
+    <!--
+      body {
+        color: #000000;
+        background-color: #ffffff;
+      }
+      .builtin {
+        /* font-lock-builtin-face */
+        color: #483d8b;
+      }
+      .comment {
+        /* font-lock-comment-face */
+        color: #b22222;
+      }
+      .comment-delimiter {
+        /* font-lock-comment-delimiter-face */
+        color: #b22222;
+      }
+      .function-name {
+        /* font-lock-function-name-face */
+        color: #0000ff;
+      }
+      .keyword {
+        /* font-lock-keyword-face */
+        color: #a020f0;
+      }
+      .string {
+        /* font-lock-string-face */
+        color: #8b2252;
+      }
+      .variable-name {
+        /* font-lock-variable-name-face */
+        color: #a0522d;
+      }
+
+      a {
+        color: inherit;
+        background-color: inherit;
+        font: inherit;
+        text-decoration: inherit;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+    -->
+    </style>
+  </head>
+  <body>
+    <pre>
+<span class="comment-delimiter">#</span><span class="comment">!/usr/bin/env python
+</span><span class="comment-delimiter"># </span><span class="comment">-*- coding: utf-8 -*-
+</span><span class="keyword">import</span> spidev
+<span class="keyword">import</span> RPi.GPIO <span class="keyword">as</span> GPIO
+<span class="keyword">import</span> os; <span class="keyword">from</span> time <span class="keyword">import</span> sleep
+os.system(<span class="string">"sudo dtparam spi=on"</span>) <span class="comment-delimiter">#</span><span class="comment">&lt;== enable spi
+</span><span class="variable-name">spi</span>=spidev.SpiDev(); spi.<span class="builtin">open</span>(0,0)
+os.system(<span class="string">"sudo dtparam spi=off"</span>) <span class="comment-delimiter">#</span><span class="comment">&lt;== disable spi =&gt; BITBANG possible
+</span><span class="comment-delimiter"># </span><span class="comment">print "pause 2sec wait for modprobe init" # time.sleep(0.1)
+</span>
+GPIO.setmode(GPIO.BCM)
+<span class="variable-name">CS1</span>, <span class="variable-name">CS2</span>, <span class="variable-name">CS3</span>, <span class="variable-name">LMK</span> = 0, 5, 6, 13
+<span class="variable-name">MISO</span>, <span class="variable-name">MOSI</span>, <span class="variable-name">SPI_CLK</span> = 9, 10, 11
+<span class="variable-name">RST</span>=19; <span class="variable-name">CLOCK_SC</span> = 26
+[GPIO.setup(CS, GPIO.OUT) <span class="keyword">for</span> CS <span class="keyword">in</span> CS1, CS2, CS3, LMK, RST, CLOCK_SC, MOSI,SPI_CLK]
+GPIO.setup(MISO, GPIO.IN)
+
+<span class="variable-name">centu</span>=0.0001 <span class="comment-delimiter">#</span><span class="comment">&lt;= 100us .
+</span>GPIO.output(RST, 0); GPIO.output(RST, 1)<span class="comment-delimiter">#</span><span class="comment">= RESET
+</span>GPIO.output(MOSI, 0)
+GPIO.output(SPI_CLK, 0)
+<span class="comment-delimiter"># </span><span class="comment">Choix prendre CGIO26 pour CLOCK_SC_20MHz
+</span>GPIO.output(CLOCK_SC, 0)
+<span class="comment-delimiter"># </span><span class="comment">GPIO.input(MISO)
+</span>
+<span class="keyword">def</span> <span class="function-name">writeByte</span>(byte, iM):
+    <span class="variable-name">digit</span>=(byte&gt;&gt;iM)&amp;0x1; GPIO.output(MOSI,digit)
+
+
+<span class="variable-name">MEM</span>=0
+<span class="keyword">def</span> <span class="function-name">read</span>(MEM, i, bit):
+    <span class="variable-name">MEM</span> = MEM | (bit&lt;&lt;i) <span class="keyword">if</span> bit <span class="keyword">else</span> MEM &amp; ~(1&lt;&lt;i)&amp;0xff
+    <span class="keyword">return</span> MEM
+
+<span class="variable-name">TAP</span>=-1
+<span class="variable-name">spi_clk</span>=0
+<span class="variable-name">fsm_clk</span>=0
+<span class="variable-name">spi_clk_old</span>= spi_clk
+<span class="variable-name">fsm_clk_old</span>= fsm_clk
+<span class="variable-name">iM</span>=0 <span class="comment-delimiter">#</span><span class="comment">&lt;= bit d'adressage de la m&#233;moire [0-7]
+</span><span class="variable-name">iW</span>=0 <span class="comment-delimiter">#</span><span class="comment">&lt;= bit d'adressage de Write [0-7]
+</span><span class="variable-name">byte</span>=0
+<span class="variable-name">WRITE</span>=0 ; <span class="variable-name">READ</span>=0
+<span class="variable-name">delai</span>=0
+<span class="variable-name">demiT_spi</span>=500
+<span class="variable-name">WRb</span>=200
+<span class="variable-name">Word_t</span>=8*2*demiT_spi
+<span class="variable-name">T_spi</span>=2*demiT_spi <span class="comment-delimiter">#</span><span class="comment">&lt;== espace entre deux trames : une p&#233;riode de spi_clk
+</span><span class="variable-name">READ_tap</span>=WRb+3*Word_t+T_spi
+<span class="variable-name">reg</span>=0x1 <span class="comment-delimiter">#</span><span class="comment">register
+</span><span class="variable-name">data</span>=0xa5
+<span class="comment-delimiter">#</span><span class="comment">MAX_TAP=1000000
+</span><span class="variable-name">MAX_TAP</span>=READ_tap+3*Word_t+T_spi+3*T_spi <span class="comment-delimiter"># </span><span class="comment">&lt;= plus 3 trames SPI de marge, temps de FIN
+</span>
+<span class="keyword">while</span>(TAP&lt;=MAX_TAP):
+    <span class="variable-name">TAP</span>+=1
+
+    <span class="variable-name">spi_clk_old</span>= spi_clk
+    <span class="variable-name">fsm_clk_old</span>= fsm_clk
+
+    <span class="keyword">if</span>(TAP%25==delai):
+        <span class="variable-name">fsm_clk</span> = 0 <span class="keyword">if</span> fsm_clk <span class="keyword">else</span> 1
+        GPIO.output(CLOCK_SC, fsm_clk)
+<span class="comment-delimiter">#        </span><span class="comment">sleep(centu)
+</span><span class="comment-delimiter">#        </span><span class="comment">raw_input("#{} {}".format(TAP, fsm_clk))
+</span>
+    <span class="keyword">if</span>(TAP%demiT_spi==0):
+        <span class="variable-name">spi_clk</span> = 0 <span class="keyword">if</span> spi_clk <span class="keyword">else</span> 1
+        GPIO.output(SPI_CLK, spi_clk)
+<span class="comment-delimiter">#        </span><span class="comment">sleep(centu)
+</span><span class="comment-delimiter">#        </span><span class="comment">print("#{} {} #spi{} {} #fsm{} {}".format(TAP, WRITE, spi_clk,  spi_clk_old, fsm_clk, fsm_clk_old, fsm_clk!=fsm_clk_old))
+</span>
+    <span class="comment-delimiter"># </span><span class="comment">if(spi_clk_old!=spi_clk):
+</span>    <span class="comment-delimiter">#     </span><span class="comment">print "in(SPI_CLK)={}_edge={} | old={}".format(GPIO.input(SPI_CLK), spi_clk, spi_clk_old)
+</span>
+    <span class="keyword">if</span>(TAP==100):
+        GPIO.output(RST, 0); <span class="comment-delimiter"># </span><span class="comment">sleep(centu)
+</span>
+    <span class="keyword">if</span>(TAP==150):
+        GPIO.output(RST, 1); <span class="comment-delimiter"># </span><span class="comment">sleep(centu)#= RESET
+</span>
+    <span class="keyword">if</span>(TAP==WRb-1):
+        GPIO.output(CS3, 0); <span class="comment-delimiter"># </span><span class="comment">sleep(centu)#&lt;== SSN DOWN
+</span>        
+    <span class="keyword">if</span>(TAP==WRb):
+        <span class="variable-name">WRITE</span>=1; <span class="variable-name">byte</span>=<span class="builtin">ord</span>(<span class="string">'w'</span>); <span class="variable-name">iW</span>=0
+
+    <span class="keyword">if</span>(TAP==(WRb+Word_t)):
+<span class="comment-delimiter">#        </span><span class="comment">raw_input("WRITE== ?{} ?{} ?{}".format(WRITE,spi_clk,  spi_clk_old))
+</span>        <span class="variable-name">WRITE</span>=1; <span class="variable-name">byte</span>=reg;      <span class="variable-name">iW</span>=0
+
+    <span class="keyword">if</span>(TAP==(WRb+2*Word_t)):
+        <span class="variable-name">WRITE</span>=1; <span class="variable-name">byte</span>=data;     <span class="variable-name">iW</span>=0
+
+    <span class="keyword">if</span>(TAP==(WRb+3*Word_t+T_spi/2)):
+        <span class="variable-name">WRITE</span>=0; GPIO.output(CS3, 1); <span class="comment-delimiter"># </span><span class="comment">sleep(centu)#&lt;== SSN UP
+</span>
+    <span class="keyword">if</span>(TAP==READ_tap-1):
+        GPIO.output(CS3, 0); <span class="comment-delimiter"># </span><span class="comment">sleep(centu)#&lt;== SSN DOWN
+</span>
+    <span class="keyword">if</span>(TAP==READ_tap):
+        <span class="variable-name">WRITE</span>=1
+        <span class="variable-name">byte</span>=<span class="builtin">ord</span>(<span class="string">'r'</span>)
+        <span class="variable-name">iW</span>=0
+
+    <span class="keyword">if</span>(TAP==(READ_tap+1*Word_t)):
+        <span class="variable-name">WRITE</span>=1
+        <span class="variable-name">byte</span>=reg
+        <span class="variable-name">iW</span>=0
+
+    <span class="keyword">if</span>(TAP==(READ_tap+2*Word_t)):
+        <span class="variable-name">READ</span>=1
+        <span class="variable-name">WRITE</span>=1
+        <span class="variable-name">byte</span>=0xff
+        <span class="variable-name">iW</span>=0
+        <span class="variable-name">iM</span>=0
+
+    <span class="keyword">if</span>(TAP==READ_tap+3*Word_t+T_spi/2):
+       <span class="variable-name">READ</span>=0;       GPIO.output(CS3, 1); <span class="comment-delimiter"># </span><span class="comment">sleep(centu)#&lt;== SSN UP
+</span>
+      
+    <span class="comment-delimiter"># </span><span class="comment">nedge
+</span>    <span class="keyword">if</span>(spi_clk==0 <span class="keyword">and</span> spi_clk_old==1 <span class="keyword">and</span> WRITE==1 <span class="keyword">and</span> iW&lt;=7):    <span class="comment-delimiter"># </span><span class="comment">data to put on wire== WRITE 1 bit
+</span>        writeByte(byte, 7-iW)<span class="comment-delimiter">#</span><span class="comment">&lt;= MSB FIRST
+</span>        <span class="keyword">print</span> <span class="string">"TAP{}, W{:08b}|{}|{:02x}|[{}].in(SPI_CLK)={}_edge{}old{}"</span>.<span class="builtin">format</span>(TAP,byte,<span class="builtin">int</span>(byte),byte, iW, GPIO.<span class="builtin">input</span>(SPI_CLK), spi_clk, spi_clk_old)
+        <span class="variable-name">iW</span>+=1
+
+    <span class="comment-delimiter"># </span><span class="comment">rising edge
+</span>    <span class="keyword">if</span>(spi_clk==1 <span class="keyword">and</span> spi_clk_old==0 <span class="keyword">and</span> READ==1 <span class="keyword">and</span> iM&lt;=7):
+        <span class="comment-delimiter"># </span><span class="comment">data to put on wire
+</span>        <span class="variable-name">bit</span>=GPIO.<span class="builtin">input</span>(MISO)
+        <span class="variable-name">MEM</span>=read(MEM, 7-iM, bit) <span class="comment-delimiter"># </span><span class="comment">je lis un bit , et je le mets dans la memoire tampon MSB FIRST
+</span>        <span class="keyword">print</span> <span class="string">"MEM[{}]=={}#&lt;= !=0 ?"</span>.<span class="builtin">format</span>(iM, MEM)
+        <span class="variable-name">iM</span>+=1
+
+<span class="comment-delimiter">#</span><span class="comment">FIN WHILE()
+</span>
+<span class="keyword">print</span> MEM
+
+
+</pre>
+  </body>
+</html>

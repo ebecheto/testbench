@@ -8,14 +8,50 @@ spi=spidev.SpiDev(); spi.open(0,0)
 os.system("sudo dtparam spi=off") #<== disable spi => BITBANG possible
 # print "pause 2sec wait for modprobe init" # time.sleep(0.1)
 
+#GPIO.setmode(GPIO.BOARD)
 GPIO.setmode(GPIO.BCM)
 CS1, CS2, CS3, LMK = 0, 5, 6, 13
 MISO, MOSI, SPI_CLK = 9, 10, 11
 RST=19; CLOCK_SC = 26
 [GPIO.setup(CS, GPIO.OUT) for CS in CS1, CS2, CS3, LMK, RST, CLOCK_SC, MOSI,SPI_CLK]
 GPIO.setup(MISO, GPIO.IN)
+# GPIO.cleanup() 
+# # BUG?
+# P3V3
+# VDD_X
+# VDD_LC
 
-TAP=0.0001 #<= 100us .
+SDN_P3V3=02
+SDN_VDD_X=03
+SDN_VDD_RO=04
+SDN_VDDD_RO=17
+SDN_VDD_LC=14
+SDN_VDDD_LC=15
+SDN_VDD_DRIVER=23#<== remap hardware FIX /!\ 5V
+
+SONDE_LISTE=[SDN_P3V3, SDN_VDD_X, SDN_VDD_RO,SDN_VDDD_RO, SDN_VDD_DRIVER, SDN_VDD_LC, SDN_VDDD_LC]
+
+[GPIO.setup(SONDE, GPIO.OUT, initial=0) for SONDE in SONDE_LISTE]
+#[GPIO.output(SONDE, 0)          for SONDE in SONDE_LISTE]
+[GPIO.input(SONDE)          for SONDE in SONDE_LISTE]
+
+
+GPIO.setup(SDN_P3V3, GPIO.OUT)
+GPIO.output(SDN_P3V3, 0)
+
+GPIO.setup(SDN_VDD_X, GPIO.OUT)
+GPIO.output(SDN_VDD_X, 0)
+
+GPIO.setup(SDN_VDD_LC, GPIO.OUT)
+GPIO.output(SDN_VDD_LC, 0)
+
+GPIO.setup(SDN_VDD_LC, GPIO.IN)
+GPIO.input(SDN_VDD_LC)
+
+[GPIO.setup(SONDE, GPIO.IN) for SONDE in SONDE_LISTE]
+[GPIO.input(SONDE)          for SONDE in SONDE_LISTE]
+
+centu=0.0001 #<= 100us .
 GPIO.output(RST, 0); GPIO.output(RST, 1)#= RESET
 GPIO.output(MOSI, 0)
 GPIO.output(SPI_CLK, 0)
@@ -23,70 +59,118 @@ GPIO.output(SPI_CLK, 0)
 GPIO.output(CLOCK_SC, 0)
 # GPIO.input(MISO)
 
-def fsmup(nb=1):
-    for i in range(nb):
-        GPIO.output(CLOCK_SC, 1)
-        sleep(TAP)
-        GPIO.output(CLOCK_SC, 0)
-        sleep(TAP)
+def writeByte(byte, iM):
+    digit=(byte>>iM)&0x1; GPIO.output(MOSI,digit)
 
-def up():
-    GPIO.output(SPI_CLK, 1)
-    sleep(2*TAP)
-
-def down():
-    GPIO.output(SPI_CLK, 0)
-    sleep(2*TAP)
-
-# fsmup(1)
-# fsmup(20)
 
 MEM=0
-def read(MEM,i=0):
-    bit=GPIO.input(MISO)
+def read(MEM, i, bit):
     MEM = MEM | (bit<<i) if bit else MEM & ~(1<<i)&0xff
     return MEM
 
-#data=0xfa
-send(0,0b00010001, CS3)
-reg = 0 # 0xff : valeur sur 8 bits
-data=0b00010001 #valeur sur 8 bits
-              _
-i=0
+TAP=-1
+spi_clk=0
+fsm_clk=0
+spi_clk_old= spi_clk
+fsm_clk_old= fsm_clk
+iM=0 #<= bit d'adressage de la mémoire [0-7]
+iW=0 #<= bit d'adressage de Write [0-7]
+byte=0
+WRITE=0 ; READ=0
+delai=0
+demiT_spi=500
+WRb=200
+Word_t=8*2*demiT_spi
+T_spi=2*demiT_spi #<== espace entre deux trames : une période de spi_clk
+READ_tap=WRb+3*Word_t+T_spi
+reg=0x1 #register
+data=0xa5
+#MAX_TAP=1000000
+MAX_TAP=READ_tap+3*Word_t+T_spi+3*T_spi # <= plus 3 trames SPI de marge, temps de FIN
 
+while(TAP<=MAX_TAP):
+    TAP+=1
 
-def envoie_8b(data, MEM=0):
-    #<= ici data sera 'reg' ou 'data' ou 'w' ou 'r' , "c'est selon"
-    for i in range(8):
-        up() # SPI_CLK passe à 1 => lecture sur front montant
-        MEM=read(MEM,i) # je lis un bit , et je le mets dans la memoire tampon
-        fsmup(20) # vingt coups de clock pour la machine d'état
-        down() # SPI_CLK passe à zero => mettre la donnée dispo.
-        digit=(data>>i)&0x1
-        GPIO.output(MOSI,digit)
-        fsmup(20) # vingt coups de clock pour la machine d'état
-    return MEM
+    spi_clk_old= spi_clk
+    fsm_clk_old= fsm_clk
 
+    if(TAP%25==delai):
+        fsm_clk = 0 if fsm_clk else 1
+        GPIO.output(CLOCK_SC, fsm_clk)
+#        sleep(centu)
+#        raw_input("#{} {}".format(TAP, fsm_clk))
 
-# GPIO.output(CS3, 1) # SSN PULL UP
+    if(TAP%demiT_spi==0):
+        spi_clk = 0 if spi_clk else 1
+        GPIO.output(SPI_CLK, spi_clk)
+#        sleep(centu)
+#        print("#{} {} #spi{} {} #fsm{} {}".format(TAP, WRITE, spi_clk,  spi_clk_old, fsm_clk, fsm_clk_old, fsm_clk!=fsm_clk_old))
 
-GPIO.output(RST, 0); GPIO.output(RST, 1)#= RESET
+    # if(spi_clk_old!=spi_clk):
+    #     print "in(SPI_CLK)={}_edge={} | old={}".format(GPIO.input(SPI_CLK), spi_clk, spi_clk_old)
 
-GPIO.output(CS3, 0) # SSN PULL UP
-fsmup(20)
-envoie_8b(ord('w'))
-envoie_8b(0)
-envoie_8b(0b00010001)
-GPIO.output(CS3, 1)
-fsmup(20)
+    if(TAP==100):
+        GPIO.output(RST, 0); # sleep(centu)
 
-GPIO.output(CS3, 0) # SSN 
-fsmup(20)
-envoie_8b(ord('r'))
-envoie_8b(0)
-MEM=envoie_8b(0xff)
-GPIO.output(CS3, 1)
-fsmup(20)
-bin(MEM)
+    if(TAP==150):
+        GPIO.output(RST, 1); # sleep(centu)#= RESET
+
+    if(TAP==WRb-1):
+        GPIO.output(CS3, 0); # sleep(centu)#<== SSN DOWN
+        
+    if(TAP==WRb):
+        WRITE=1; byte=ord('w'); iW=0
+
+    if(TAP==(WRb+Word_t)):
+#        raw_input("WRITE== ?{} ?{} ?{}".format(WRITE,spi_clk,  spi_clk_old))
+        WRITE=1; byte=reg;      iW=0
+
+    if(TAP==(WRb+2*Word_t)):
+        WRITE=1; byte=data;     iW=0
+
+    if(TAP==(WRb+3*Word_t+T_spi/2)):
+        WRITE=0; GPIO.output(CS3, 1); # sleep(centu)#<== SSN UP
+
+    if(TAP==READ_tap-1):
+        GPIO.output(CS3, 0); # sleep(centu)#<== SSN DOWN
+
+    if(TAP==READ_tap):
+        WRITE=1
+        byte=ord('r')
+        iW=0
+
+    if(TAP==(READ_tap+1*Word_t)):
+        WRITE=1
+        byte=reg
+        iW=0
+
+    if(TAP==(READ_tap+2*Word_t)):
+        READ=1
+        WRITE=1
+        byte=0xff
+        iW=0
+        iM=0
+
+    if(TAP==READ_tap+3*Word_t+T_spi/2):
+       READ=0;       GPIO.output(CS3, 1); # sleep(centu)#<== SSN UP
+
+      
+    # nedge
+    if(spi_clk==0 and spi_clk_old==1 and WRITE==1 and iW<=7):    # data to put on wire== WRITE 1 bit
+        writeByte(byte, 7-iW)#<= MSB FIRST
+        print "TAP{}, W{:08b}|{}|{:02x}|[{}].in(SPI_CLK)={}_edge{}old{}".format(TAP,byte,int(byte),byte, iW, GPIO.input(SPI_CLK), spi_clk, spi_clk_old)
+        iW+=1
+
+    # rising edge
+    if(spi_clk==1 and spi_clk_old==0 and READ==1 and iM<=7):
+        # data to put on wire
+        bit=GPIO.input(MISO)
+        MEM=read(MEM, 7-iM, bit) # je lis un bit , et je le mets dans la memoire tampon MSB FIRST
+        print "MEM[{}]=={}#<= !=0 ?".format(iM, MEM)
+        iM+=1
+
+#FIN WHILE()
+
+print MEM
 
 
