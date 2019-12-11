@@ -72,6 +72,11 @@ class AlimE3631A:
     def imA(self):
         return "{}[mA]".format(round(eval(self.send("MEAS:CURR:DC? P6V"))*1e3,0))
 
+    def state(self):
+        p6v=round(eval(self.send("MEAS:VOLT?"))*1e3,0)/1e3
+        i6=round(eval(self.send("MEAS:CURR:DC? P6V"))*1e3,0)
+        return "{}[V]@{}[mA]".format(p6v, i6)
+
     def RES(self):
         return self.send("MEAS:RES?").split(',')[2]
 
