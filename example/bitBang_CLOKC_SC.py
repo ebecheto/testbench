@@ -12,14 +12,11 @@ os.system("sudo dtparam spi=off") #<== disable spi => BITBANG possible
 GPIO.setmode(GPIO.BCM)
 CS1, CS2, CS3, LMK = 0, 5, 6, 13
 MISO, MOSI, SPI_CLK = 9, 10, 11
-RST=19; CLOCK_SC = 26
-[GPIO.setup(CS, GPIO.OUT) for CS in CS1, CS2, CS3, LMK, RST, CLOCK_SC, MOSI,SPI_CLK]
+RST=19; CLOCK_SC = 26 # Choix prendre GPIO26 pour CLOCK_SC_20MHz
+CS_LISTE=[CS1, CS2, CS3, LMK, RST, CLOCK_SC, MOSI, SPI_CLK]
+[GPIO.setup(CS, GPIO.OUT, initial=0) for CS in CS_LISTE]
 GPIO.setup(MISO, GPIO.IN)
 # GPIO.cleanup() 
-# # BUG?
-# P3V3
-# VDD_X
-# VDD_LC
 
 SDN_P3V3=02
 SDN_VDD_X=03
@@ -29,35 +26,16 @@ SDN_VDD_LC=14
 SDN_VDDD_LC=15
 SDN_VDD_DRIVER=23#<== remap hardware FIX /!\ 5V
 
-SONDE_LISTE=[SDN_P3V3, SDN_VDD_X, SDN_VDD_RO,SDN_VDDD_RO, SDN_VDD_DRIVER, SDN_VDD_LC, SDN_VDDD_LC]
+SONDE_LISTE=[SDN_P3V3, SDN_VDD_X, SDN_VDD_RO,SDN_VDDD_RO, SDN_VDD_LC, SDN_VDDD_LC, SDN_VDD_DRIVER]
 
 [GPIO.setup(SONDE, GPIO.OUT, initial=0) for SONDE in SONDE_LISTE]
 #[GPIO.output(SONDE, 0)          for SONDE in SONDE_LISTE]
+[GPIO.output(SONDE, 1)          for SONDE in SONDE_LISTE]
 [GPIO.input(SONDE)          for SONDE in SONDE_LISTE]
-
-
-GPIO.setup(SDN_P3V3, GPIO.OUT)
-GPIO.output(SDN_P3V3, 0)
-
-GPIO.setup(SDN_VDD_X, GPIO.OUT)
-GPIO.output(SDN_VDD_X, 0)
-
-GPIO.setup(SDN_VDD_LC, GPIO.OUT)
-GPIO.output(SDN_VDD_LC, 0)
-
-GPIO.setup(SDN_VDD_LC, GPIO.IN)
-GPIO.input(SDN_VDD_LC)
-
-[GPIO.setup(SONDE, GPIO.IN) for SONDE in SONDE_LISTE]
-[GPIO.input(SONDE)          for SONDE in SONDE_LISTE]
+# ENABLE OR DISABLE BY SOFTWARE
 
 centu=0.0001 #<= 100us .
-GPIO.output(RST, 0); GPIO.output(RST, 1)#= RESET
-GPIO.output(MOSI, 0)
-GPIO.output(SPI_CLK, 0)
-# Choix prendre CGIO26 pour CLOCK_SC_20MHz
-GPIO.output(CLOCK_SC, 0)
-# GPIO.input(MISO)
+GPIO.output(RST, 0); GPIO.output(RST, 1); GPIO.output(RST, 0)#= RESET, fait apres aussi
 
 def writeByte(byte, iM):
     digit=(byte>>iM)&0x1; GPIO.output(MOSI,digit)
@@ -89,31 +67,24 @@ data=0xa5
 MAX_TAP=READ_tap+3*Word_t+T_spi+3*T_spi # <= plus 3 trames SPI de marge, temps de FIN
 
 while(TAP<=MAX_TAP):
-    TAP+=1
-
-    spi_clk_old= spi_clk
-    fsm_clk_old= fsm_clk
+    TAP+=1; spi_clk_old= spi_clk; fsm_clk_old= fsm_clk
 
     if(TAP%25==delai):
         fsm_clk = 0 if fsm_clk else 1
         GPIO.output(CLOCK_SC, fsm_clk)
-#        sleep(centu)
-#        raw_input("#{} {}".format(TAP, fsm_clk))
 
-    if(TAP%demiT_spi==0):
+    if(TAP%demiT_spi==0):# %500
         spi_clk = 0 if spi_clk else 1
         GPIO.output(SPI_CLK, spi_clk)
-#        sleep(centu)
-#        print("#{} {} #spi{} {} #fsm{} {}".format(TAP, WRITE, spi_clk,  spi_clk_old, fsm_clk, fsm_clk_old, fsm_clk!=fsm_clk_old))
-
-    # if(spi_clk_old!=spi_clk):
-    #     print "in(SPI_CLK)={}_edge={} | old={}".format(GPIO.input(SPI_CLK), spi_clk, spi_clk_old)
 
     if(TAP==100):
         GPIO.output(RST, 0); # sleep(centu)
 
+    if(TAP==125):
+        GPIO.output(RST, 1); # sleep(centu)
+
     if(TAP==150):
-        GPIO.output(RST, 1); # sleep(centu)#= RESET
+        GPIO.output(RST, 0); # sleep(centu)#= RESET
 
     if(TAP==WRb-1):
         GPIO.output(CS3, 0); # sleep(centu)#<== SSN DOWN
