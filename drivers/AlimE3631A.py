@@ -58,6 +58,12 @@ class AlimE3631A:
     def __del__(self):
         self.ser.close()
 
+    def on(self):
+        self.send("OUTPut ON")
+
+    def off(self):
+        self.send("OUTPut OFF")
+
     def currents(self):
         i1=self.send("MEAS:CURR:DC? P6V")
         i2=self.send("MEAS:CURR:DC? P25V")
