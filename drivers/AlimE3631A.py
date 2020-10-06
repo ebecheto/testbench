@@ -79,9 +79,13 @@ class AlimE3631A:
         return "{}[mA]".format(round(eval(self.send("MEAS:CURR:DC? P6V"))*1e3,0))
 
     def state(self):
+        onoff=self.send("OUTPUT?")
+        onof="ON " if onoff=='1' else "OFF"
         p6v=round(eval(self.send("MEAS:VOLT?"))*1e3,0)/1e3
         i6=round(eval(self.send("MEAS:CURR:DC? P6V"))*1e3,0)
-        return "{}[V]@{}[mA]".format(p6v, i6)
+        p25v=round(eval(self.send("MEAS:VOLT? P25V"))*1e3,0)/1e3
+        i25=round(eval(self.send("MEAS:CURR:DC? P25V"))*1e3,0)
+        return "{}|{}[V]@{}[mA]|{}[V]@{}[mA]".format(onof, p6v, i6, p25v, i25)
 
     def RES(self):
         return self.send("MEAS:RES?").split(',')[2]
