@@ -185,6 +185,16 @@ class OscilloWavePro:
                     SIGMA = mes['SIGMA'],
                     SWEEPS = mes['SWEEPS'])
 
+
+    def getFunctions(self):
+        """ a tester sur differents scope, certains n ont pas de fonction Math"""
+        ret=""
+        for i in range(12):
+            ret=ret+str(i+1)+"|" + self.send("vbs? 'return = app.Math.F"+str(i+1)+".Equation'").lstrip("VBS ")
+            ret=ret+"\t"+self.send("vbs? 'return = app.Math.F"+str(i+1)+".Operator1'").lstrip("VBS ")
+            ret=ret+"\n"
+        return ret
+
 ## added convienient  features
 # setMaxFit(1,1,2)    # default
 # setMaxFit(1,None,2) # default
