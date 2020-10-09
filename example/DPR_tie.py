@@ -49,6 +49,27 @@ for i in range(12):
 for i in range(12):
     str(i+1)+"|" + osc.send("vbs? 'return = app.Math.F"+str(i+1)+".Equation'")
 
+osc.send("vbs? 'return =  app.Math.F1.Out.Result.Samples")#'VBS 999999'
+osc.send("vbs? 'return =  app.Math.F1.Out.Result.DataArray")
+#=> 'VBS Cannot convert Variant to String'
+osc.send("vbs? 'return =  app.Math.F1.Out.Result.DataArray(10,10,1,1)")
+
+
+# osc.send("""VBS'app.Acquisition.C1.VDIV=".02V"'""",1)
+osc.send("VBS? 'return=app.Measure.P1.Out.Result.Value'")#'VBS No Data Available'
+osc.send("vbs? 'return=app.measure.p1.out.result.value'")#'VBS No Data Available'
+osc.send("INSPECT? SIMPLE")
+osc.send("INSPECT? SIMPLE, WORD")
+osc.send("INSPECT? SIMPLE, FLOAT")
+osc.send("INSPECT? DUAL")
+osc.send("INSPECT? DATA_ARRAY_1")
+osc.send("INSPECT? DATA_ARRAY_2")
+osc.send("F3:WAVEFORM?")
+osc.send("F3:INSP? TIMEBASE")
+osc.send("TEMPLATE?")
+osc.send("WFSUSP,3,FP,200")
+osc.send("WAVEFORM_SETUP?")
+
 
 # osc.get()
 # osc.s.recv(osc.BUFFER_SIZE)
