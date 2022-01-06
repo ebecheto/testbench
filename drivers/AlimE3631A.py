@@ -31,7 +31,7 @@ class AlimE3631A:
         self.send("SYST:REM") #<== a refaire si on appuye sur bouton 'Local'
         time.sleep(0.2)#<== le passage en remote mets un peu de temps
         self.idn = self.send("*IDN?")
- 
+    
     def send(self,MESSAGE):
         try:
             self.ser.write(MESSAGE+"\r\n")
@@ -44,34 +44,40 @@ class AlimE3631A:
                 time.sleep(0.3)
                 self.response=self.ser.readline().strip('\r\n')
                 return self.response
-
+        
         except serial.errno as e:
             self.ser.open()
             self.send(MESSAGE)
-
+        
         except self.ser.SerialException:
 #        except IOError: # if port is already opened, close it and open it again and print message
             ser.close()
             ser.open()
             print ("port was already open, was closed and opened again!")
-
+    
     def __del__(self):
         self.ser.close()
-
+    
     def currents(self):
         i1=self.send("MEAS:CURR:DC? P6V")
         i2=self.send("MEAS:CURR:DC? P25V")
         i3=self.send("MEAS:CURR:DC? N25V")
         return i1, i2, i3
-
+    
     def current2(self):
         i1=self.send("MEAS:CURR:DC? P6V")
         i2=self.send("MEAS:CURR:DC? P25V")
         return i1, i2
-
+    
+    def pwr(self, bouton=0):
+        cadrant=["P6V", "P25V", "N25V"]
+        i=self.send("MEAS:CURR:DC? "+cadrant[bouton])
+        v=self.send("MEAS:VOLT:DC? "+cadrant[bouton])
+        return "{}[A]@{}[V]".format(i, v)
+    
     def RES(self):
         return self.send("MEAS:RES?").split(',')[2]
-
+    
     def TEMP2RES(self,T):
         return 100*(1+ 3.908e-3*T - 5.775e-7*T**2 + (0 if T > 0 else -4.183e-12)*(T-100)**3 )
     

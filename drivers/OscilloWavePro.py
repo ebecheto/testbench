@@ -370,18 +370,19 @@ class OscilloWavePro:
 
 
 #USAGE for shell test (not import from python)
-#python drivers/OscilloWavePro.py -ip '192.168.0.48'
+#python drivers/OscilloWavePro.py -ip '192.168.0.48' -port 5025
 if __name__ == '__main__':
     import readline
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument('-ip', default='192.168.0.45')
+    parser.add_argument('-ip', default='169.254.222.45')
+    parser.add_argument('-port', default=4000)
     args = parser.parse_args()
     ip=args.ip
     print("Si ca marche pas, un autre process doit etre en marche -> kill")
     ws = OscilloWavePro(ip)
     print("Connected ?")
-    print  """    ____exemple:____    respond
+    print(  """    ____exemple:____    respond
     C1:VDIV?       #<== Voltage / division of channel 1
     TDIV?          #<== time / division
     TDIV 1E-3      #<== above 50us allowed when SetMaximumMemory set!
@@ -398,13 +399,13 @@ if __name__ == '__main__':
     PACU 3, DDLY, C1, C2 #<== set param 1 as the delay between ch1 and ch2
     VBS 'app.Acquisition.Trigger.C2.Level=0.055' #<== more advanced features
     vbs 'app.SystemControl.CloseDialog' #<== close the bottom panel if opened
-    """
-    print 'to (q)uit type q\n'
+    """ )
+    print( 'to (q)uit type q\n')
 
     msg = "*IDN?"
     while msg != 'q':
         ws.send(msg)
         if '?' in msg:
-            print ws.response
+            print( ws.response)
         msg = raw_input('>')
     ws.close()

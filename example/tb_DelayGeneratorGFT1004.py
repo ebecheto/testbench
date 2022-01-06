@@ -1,6 +1,10 @@
 import DelayGeneratorGFT1004
 
-pul = DelayGeneratorGFT1004.DelayGeneratorGFT1004('192.168.0.43')
+# pul = DelayGeneratorGFT1004.DelayGeneratorGFT1004('192.168.0.43')
+pul = DelayGeneratorGFT1004.DelayGeneratorGFT1004('169.254.222.43')
+pul.send("DELAY? T1")
+# TRIG? T1
+TRIG T1 LSS;TRIG T1 SS1
 
 delay=100#<== [ns] nanoseconde unit
 pul.send("DELAY T1,{}".format(delay))
