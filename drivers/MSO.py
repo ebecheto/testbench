@@ -2,12 +2,13 @@
 
 import socket,sys, errno
 import collections
+import numpy as np
+
 
 class MSO:
     BUFFER_SIZE = 32*1024
     MEAS=["MEAN", "MAX", "MIN", "STDD", "POPU"]
-    Measure = collections.namedtuple('Measure',
-        'SLOT TEXT AVG HIGH LAST LOW SIGMA SWEEPS')
+    Measure = collections.namedtuple('Measure', 'SLOT TEXT AVG HIGH LAST LOW SIGMA SWEEPS')
     def __init__(self, ip, port=4000):
         self.name= "Agilent"
         self.ip=ip
@@ -18,10 +19,10 @@ class MSO:
         self.idn = self.send("*IDN?")
         self.stdin  = None
         self.stdout = None
-        
+
     def __del__(self):
         self.s.close()
-        
+
     def connect(self):
         self.s.connect((self.ip, self.port))
 
@@ -66,6 +67,47 @@ class MSO:
 	return MSO.Measure(**mes) #<== apply every elemet of the dictionnary to the tupple for name indexing
 #	return self.Measure(**mes)
 #	return mes
+
+    def getMeasurements(self):
+	slots=self.send("MEASUrement:LIST?")
+	ret=[self.getMeasurement(s.replace('MEAS','')) for s in slots.split(',')]
+	return ret
+
+    def getSV(self, slot=1, file="spectrumView3.dat"):
+        self.send("CH{}:SV:STATE?".format(slot))
+        self.send("CH{}:SV:STATE ON".format(slot))
+        self.send('DATA:SOURCE CH{}_SV_NORMal'.format(slot))
+        self.send("WFMOutpre:ENCdg ASCii")
+        curve=self.send('CURVE?')
+        values = [float(i) for i in curve.split(',')]
+        datas=np.array(values)
+#        file="spectrumView1.dat"
+        np.savetxt(file, datas, delimiter="\n")
+        # YUNIT, XUNIT, XZERO, XINCR=[self.send("WFMOutpre:"+s+"?") for s in ["YUNIT", "XUNIT", "XZERO", "XINCR"]]
+        # print YUNIT, XUNIT, XZERO, XINCR #=> "dBm" "Hz" 625.6884000E+6 263.1578947368421E+3
+        footer="old_term=GPVAL_TERM\nset term pngcairo font \"Sans,9\"\noutfile=file[0:strstrt(file, \".\")-1].\".png\"\nset output outfile; replot; pr \"[\".outfile.\"] saved\"\nset t old_term 0 font \"Sans,9\"; replot\n"
+        gpfile=file.split(".")[0]+".gp" #=> 'spectrumView1.gp'
+        f=open(gpfile, 'w')
+        header='set tics format "%.1s%c"'
+        header+='\n'+'set xtics right rotate by 45'
+        header+='\n'+'set ylabel "[".YUNIT."]"'
+        header+='\n'+'set xlabel "[".XUNIT."]"'
+        header+='\n'
+        [f.write("{}={}\n".format(s,self.send("WFMOutpre:"+s+"?"))) for s in ["YUNIT", "XUNIT", "XZERO", "XINCR"]] #OK
+        f.write(header)
+        WFID=self.send('WFMOutpre:WFID?')#=too verbose
+        WFID=','.join(WFID.split(',')[:-1])+"\"" # WARNING, remove last split take off last double quote
+        f.write("WFID="+WFID+"\n")
+        f.write("file='"+file+"'\n")
+        f.write("plot file u (XZERO+$0*XINCR):1 w lp t WFID\n")
+        xys=zip(self.send("SV:MARKER:PEAKS:FREQuency?")[1:-1].split(','), self.send("SV:MARKER:PEAKS:AMPLITUDE?")[1:-1].split(','))
+        for n, xy in enumerate(xys):
+                f.write("set label {} gprintf(\"%.2s%c\", {}) at {},{}  left\n".format(n+1,xy[0],xy[0],xy[1]))
+        #set label 2   at position, Yc left
+        #f.write("replot\n")
+        f.write(footer)
+        f.close()
+        print("gnuplot "+gpfile+" -")
 
 
     # def getMeasurement(self, slot):
