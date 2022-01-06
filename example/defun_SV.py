@@ -45,6 +45,8 @@ MARKER=self.send("SV:MARKER:REFERence:FREQuency?") #=> '873.8463E+6'
 YUNIT, XUNIT, XZERO, XINCR=[self.send("WFMOutpre:"+s+"?") for s in ["YUNIT", "XUNIT", "XZERO", "XINCR"]]
 print YUNIT, XUNIT, XZERO, XINCR #=> "dBm" "Hz" 625.6884000E+6 263.1578947368421E+3
 
+footer="old_term=GPVAL_TERM\nset term pngcairo font \"Sans,9\"\noutfile=file[0:strstrt(file, \".\")-1].\".png\"\nset output outfile; replot; pr \"[\".outfile.\"] saved\"\nset t old_term 0 font \"Sans,9\"; replot\n"
+
 gpfile=file.split(".")[0]+".gp" #=> 'spectrumView1.gp'
 f=open(gpfile, 'w')
 header='set tics format "%.1s%c"'
@@ -66,6 +68,10 @@ for n, xy in enumerate(xys):
 	f.write("set label {} gprintf(\"%.2s%c\", {}) at {},{}  left\n".format(n+1,xy[0],xy[0],xy[1]))
 
 #set label 2   at position, Yc left
-f.write("replot\n")
+#f.write("replot\n")
+f.write(footer)
 f.close()
 print("gnuplot "+gpfile+" -")
+
+
+
