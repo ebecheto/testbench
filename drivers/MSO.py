@@ -51,7 +51,7 @@ class MSO:
 	self.send("MEASUREMENT:MEAS{0}:TYPE {1};MEASUREMENT:MEAS{0}:SOURCE {2}".format(slot, type, source))
 
 
-    def getMeasurement2(self, slot):
+    def getMeasurement(self, slot):
 	mes =  dict()
 	mes['TEXT']=''
         mes['TEXT'] += self.send("MEASUREMENT:MEAS{0}:SOURCE?".format(str(slot)))
@@ -68,15 +68,15 @@ class MSO:
 #	return mes
 
 
-    def getMeasurement(self, slot):
-        """
-	self.send("MEASU:MEAS1:SUBGROUP:RESUlts:ALLAcqs:MEAN? \"OUTPUT1\"")
-	self.send("MEASU:MEAS1:SUBGROUP:RESUlts:ALLAcqs:POPU? \"OUTPUT1\"")
-        """
-        # while(self.send("MEASU:MEAS"+str(slot)+":SUBGROUP:RESUlts:ALLAcqs:POPU? \"OUTPUT1\"")=='0'):
-        #     print("DEBUG POPU")
-        #     True
-        return [self.send("MEASU:MEAS"+str(slot)+":SUBGROUP:RESUlts:ALLAcqs:"+m+"? \"OUTPUT1\"") for m in self.MEAS]
+    # def getMeasurement(self, slot):
+    #     """
+    # 	self.send("MEASU:MEAS1:SUBGROUP:RESUlts:ALLAcqs:MEAN? \"OUTPUT1\"")
+    # 	self.send("MEASU:MEAS1:SUBGROUP:RESUlts:ALLAcqs:POPU? \"OUTPUT1\"")
+    #     """
+    #     # while(self.send("MEASU:MEAS"+str(slot)+":SUBGROUP:RESUlts:ALLAcqs:POPU? \"OUTPUT1\"")=='0'):
+    #     #     print("DEBUG POPU")
+    #     #     True
+    #     return [self.send("MEASU:MEAS"+str(slot)+":SUBGROUP:RESUlts:ALLAcqs:"+m+"? \"OUTPUT1\"") for m in self.MEAS]
 
 
 

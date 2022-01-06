@@ -3,6 +3,7 @@ osc = MSO.MSO('169.254.222.26'); print "Osc connected"
 # osc.send('HEADer OFF')
 # osc.send('VERBose OFF')
 
+
 osc.send("MEASUrement?")
 osc.send("MEASUrement:LIST?")# 'MEAS1,MEAS2,MEAS3,MEAS4'
 osc.send("HORIZONTAL?")
@@ -58,7 +59,7 @@ osc.send('acquire:stopafter sequence')
 osc.send('acquire:state on')
 osc.send('*opc?') # => '1'
 print('Waveform acquired.')
-osc.send('DATA:SOURCE ?')
+osc.send('DATA:SOURCE?')
 osc.send('DATA:SOURCE CH1')
 osc.send('DATA:SOURCE CH1_SV_NORMal')
 osc.send('DATA:ENCdg SFPBinary')
@@ -222,12 +223,113 @@ osc.send("MEASUREMENT:MEAS1:RESUlts:CURRentacq?") #<= failed : marche pas, pas p
 
 osc.send("MEASUREMENT:MEAS1:RESUlts?")
 
-osc.getMeasurement2(1)
-a=osc.getMeasurement2(1)
+osc.getMeasurement(1)
+
 self=osc
+slots=self.send("MEASUrement:LIST?")
 
-self.Measure(**mes)
+dct_arr=osc.getMeasurements()
 
 
-osc.getMeasurement2(1)
-osc.getMeasurement2(5)
+import yaml #pip install pyyaml
+import json
+print(json.dumps(dct_arr, sort_keys=False, indent=4)) # bof
+
+print(yaml.dump(dct_arr, sort_keys=False, default_flow_style=False))
+import pprint
+
+from tabulate import tabulate # pip install tabulate
+import pandas as pd
+df = pd.DataFrame(dct_arr)
+print(tabulate(df.T, headers="keys"))
+print(tabulate(df, headers="keys"))
+#       SLOT  TEXT                    AVG         HIGH          LAST           LOW        SIGMA     SWEEPS
+# --  ------  -------------  ------------  -----------  ------------  ------------  -----------  ---------
+#  0       1  CH1,AMPLITUDE   0.578542     0.597568      0.578351      0.559334     0.00439924     4378142
+#  1       2  CH1,FREQUENCY   8.74329e+08  8.84938e+08   8.74945e+08   8.60892e+08  2.18675e+06  437555451
+#  2       3  CH4,PERIOD      1.1425e-09   1.16057e-09   1.14223e-09   1.1283e-09   2.41023e-12  437412643
+#  3       4  CH4,FREQUENCY   8.75277e+08  8.86288e+08   8.75972e+08   8.61642e+08  1.84549e+06  437412817
+#  4       5  CH4,TIE        -1.94855e-26  2.00375e-11  -5.33954e-23  -1.89324e-11  3.06471e-12   49572967
+
+pd.DataFrame(dct_arr)#<== suffit pour affichage
+
+pip install si-prefix
+from si_prefix import si_format
+print si_format(.5)
+# 500.0m  (default precision is 1)
+type(si_format(.5))
+df.applymap(si_format)
+
+def is_float(element: Any) -> bool:
+    try:
+        float(element)
+        return True
+    except ValueError:
+        return False
+
+
+lambda x: str(x).replace('.','').isdigit()).any()
+df.applymap(lambda x: str(x).replace('.','').isdigit())
+
+import si_prefix
+si_prefix.SI_PREFIX_UNITS="yzafpnum kMGTPEZY"
+
+def siSuffixNotation(element):
+    try:
+        ret=float(element)
+        return str(si_format(ret)).replace(' ','')
+    except ValueError:
+        return element
+
+# bof, si_format renvoie de l'unicode, et mets un espace entre le chiffre et l unite
+# solved with SI_PREFIX_UNITS="yzafpnum kMGTPEZY" and replace
+
+df.applymap(siSuffixNotation)
+#osc.send("MEASUREMENT:DELETE \"MEAS5\"")
+# df=pd.DataFrame(osc.getMeasurements())
+# df.applymap(siSuffixNotation)
+
+
+
+slot=1
+self=osc
+osc.send("CH1:SV:STATE?")
+osc.send("CH1:SV:STATE ON")
+osc.send('DATA:SOURCE CH1_SV_NORMal')
+# osc.send('DATA:SOURCE?')
+# osc.send('DATA:ENCdg?')# =>SFPBINARY OK
+# osc.send('WFMOutpre:BYT_Nr?')#=> 4 OK
+# osc.send("CH1:SV:STATE OFF")
+# osc.send('DATa:SOUrce:AVAILable?') #=>'CH1,CH4'
+# osc.send("CH1:SV:STATE ON") #=> 'CH1_SV_NORMAL' OK
+
+
+import numpy as np
+
+curve=osc.send('CURVE?')
+recordLengthSTR = osc.send('horizontal:mode:recordlength?')
+numPoints = int(osc.send('WFMOutpre:NR_Pt?'))
+print("recordlength=" + recordLengthSTR+ "numPoints=" + str(numPoints))
+datas=np.frombuffer(curve,np.float32,numPoints)
+# values = [float(i) for i in curve.split(',')]
+# datas=np.array(values)
+file="spectrumView1.dat"
+np.savetxt(file, datas, delimiter="\n")
+osc.send('WFMOutpre:YUNIT?') #=> '"dBm"'
+
+# [osc.send("WFMOutpre:"+s+"?") for s in ["WFID", "NR_Pt", "Center Freq", "Span"]]
+numPoints = int(osc.send('WFMOutpre:NR_Pt?'))
+["WFMOutpre:"+s+"?" for s in ["WFID", "NR_Pt", "Center Freq", "Span"]]
+osc.send('WFMOutpre:WFID?')#=>'"CH1_SV_NORMAL, 1902 points, Center Freq: 875.6884MHz, Span: 500MHz, FFTlength 0"'
+osc.send('WFMOutpre:NR_Pt?')#=> '1901'
+#osc.send('WFMOutpre:Center Freq?')
+osc.send('WFMOutpre:CENTERFREQuency?') #= '875.6884E+6'
+osc.send('WFMOutpre:Span?')  #=> 500.0000E+6'
+MARKER=osc.send("SV:MARKER:REFERence:FREQuency?") #=> '873.8463E+6'
+
+YUNIT, XUNIT, XZERO, XINCR=[osc.send("WFMOutpre:"+s+"?") for s in ["YUNIT", "XUNIT", "XZERO", "XINCR"]]
+YUNIT, XUNIT, XZERO, XINCR #=> "dBm" "Hz" 625.6884000E+6 263.1578947368421E+3
+
+gpfile=file.split(".")[0]+".gp" #=> 'spectrumView1.gp'
+
+
