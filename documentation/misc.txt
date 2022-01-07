@@ -15,9 +15,17 @@ sshfs USER@192.168.178.32:/home/USER ~/remote
 cp -p someFile ~/remote/put/it/some/where/oh/damn/you/here
 export PYTHONPATH=$HOME/dirWithScripts/:$PYTHONPATH
 export PYTHONPATH=$HOME/testbench/driver/:$PYTHONPATH
+export PYTHONPATH=$HOME/testbench/python-ivi/python-vxi11:$PYTHONPATH
+export PYTHONPATH=$HOME/testbench/python-ivi/python-ivi:$PYTHONPATH
+export PYTHONPATH=$HOME/testbench/python-ivi/python-usbtmc:$PYTHONPATH
 emacs --reverse-video 
 ifconfig eth1 192.168.0.41 netmask 255.255.255.0 broadcast 192.168.0.255
 sudo ifconfig eth1 169.254.222.25 netmask 255.255.255.0 broadcast 169.254.222.255
 
 python -m pip install pyserial
 sudo usermod -a -G dialout $USER
+
+# try this later :
+echo -n '$IDN*' | nc 169.254.222.26 4000 #=> write command to port
+nc -l 169.254.222.26 4000 #<= listen to the port
+
