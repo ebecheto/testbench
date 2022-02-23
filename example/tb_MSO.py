@@ -1,8 +1,8 @@
 import MSO
-osc = MSO.MSO('169.254.222.26'); print "Osc connected"
+osc = MSO.MSO('169.254.222.26'); print( "Osc connected")
+
 # osc.send('HEADer OFF')
 # osc.send('VERBose OFF')
-
 
 osc.send("MEASUrement?")
 osc.send("MEASUrement:LIST?")# 'MEAS1,MEAS2,MEAS3,MEAS4'
@@ -52,6 +52,8 @@ osc.s.recv(osc.BUFFER_SIZE)
 osc.send('*WAI') #=> dunno
 osc.send('*BUSY?') #=> Blocking ?
 osc.send('*ESR?') #=> 160 : Block data error
+osc.send('SYST:ERR?')
+
 
 # ('Acquiring waveform.')
 #dpo.timeout = 10000
@@ -88,6 +90,8 @@ osc.send("CH1_SV_MAXHold")
 osc.send('CURVE?')
 osc.send("CH1_SV_AVErage")
 osc.send("CH1_SV_MINHold")
+osc.send("SV:CH1:SELTrace?")
+
 
 osc.send('DATa:SOUrce:AVAILable?')
 # => 'CH1,CH1_SV_BASEBAND_IQ,CH4,CH4_SV_BASEBAND_IQ,CH1_SV_NORMAL,CH4_SV_NORMAL'
@@ -167,7 +171,7 @@ osc.send("SV:CH1:SELect:RF_PHASe?")  #phase versus time <=> TIE ?
 osc.send("SV:CH1:SELect:RF_PHASe ON")  #phase versus time <=> TIE ?
 
 osc.send("SV:CH1:SELect:RF_MINHold ON") #=> nice one : enveloppe
-osc.send("CLEAR") # equivalent clrear sweep
+osc.send("CLEAR") # equivalent clear sweep
 
 osc.send("MEASUREMENT:MEAS1?")
 osc.send("MEASU:MEAS1:SUBGROUP:RESUlts:ALLAcqs:MAXimum? \"OUTPUT1\"") # '1.1568259221627E-9'
@@ -333,3 +337,119 @@ YUNIT, XUNIT, XZERO, XINCR #=> "dBm" "Hz" 625.6884000E+6 263.1578947368421E+3
 gpfile=file.split(".")[0]+".gp" #=> 'spectrumView1.gp'
 
 
+osc.getSV(1)
+osc.getSV(1, "sv4.dat", True)
+
+
+osc.send('DATA:SOURCE CH1_SV_MAX_HOLD')
+np.savetxt("CH1_SV_MAX_HOLD", np.array([float(i) for i in osc.send('CURVE?').split(',')]), delimiter='\n')
+
+
+osc.send('DATA:SOURCE CH1_SV_BASEBAND_IQ')
+np.savetxt("CH1_SV_BASEBAND_IQ", np.array([float(i) for i in osc.send('CURVE?').split(',')]), delimiter='\n')
+
+
+osc.send('DATA:SOURCE CH1')
+np.savetxt("CH1", np.array([float(i) for i in osc.send('CURVE?').split(',')]), delimiter='\n')
+
+osc.send('WFMOutpre?')
+'2;16;ASC;RP;INT;LSB;"Ch1, DC coupling, 100mV/div, 10ns/div, 1250 points, Sample mode";1250;Y;LIN;"s";80.0E-12;39.687500E-12;625;"V";15.6250E-6;0.0E+0;0.0E+0;TIME;ANALOG;0.0E+0;0.0E+0;2.3750E+3;1'
+
+
+osc.send("SAVe:EVENTtable:MEASUrement \"TEK000.CSV\"")
+osc.send("FILESYSTEM:READFILE \"TEK000.CSV\""); filestring=osc.send("?") #<= get
+osc.send("FILESystem:DIR?") #=> '"Applications","PICompatibility","Temp.png"'
+
+table='TEK000.CSV'
+osc.send("SAVe:EVENTtable:MEASUrement \""+table+"\"")
+osc.send("FILESYSTEM:READFILE \""+table+"\"");
+# filestring=osc.send("*IDN?") #<= get
+import numpy as np
+self=osc
+filestring=self.s.recv(self.BUFFER_SIZE)
+np.savetxt(file, filestring, delimiter="\n")
+
+osc.send('DATA:SOURCE?')
+osc.send('MEASUrement:ADDMEAS FREQUENCY')
+
+osc.s.recv(osc.BUFFER_SIZE)
+osc.s.recv(1024)
+osc.s.recv(1)
+
+
+self=osc
+
+"""
+IEEE 488.2 Common Commands
+*LRN? #<= toot verbose, but nice to save state and reload state
+"""
+self.prout="".join([self.prout+cmd+" => "+self.send(cmd)+'\n' for cmd in ('*OPC?','*OPT?','*STB?','*ESR?')])
+return self.prout
+
+# python3 socket changed default 
+# .encode()
+
+.chunk_size
+
+#osc.send('HCOPY:PORT DISK;HCOPY START;*OPC')
+osc.send('BUSY?')
+osc.send('*WAI')
+osc.send('EVENT?')
+osc.send("EVMSG?")
+osc.send('DCL')
+osc.send('*ESR?')
+
+osc.send("FILESYSTEM:READFILE \"TEK000.CSV\"")
+osc.send('*ESR?')
+osc.send('allev?')
+
+osc.send("FILESYSTEM:READFILE \"existePAS\"")
+osc.bug()
+osc.send("FILESYSTEM:READFILE 'TEK000.CSV'?")
+osc.bug()
+osc.send("FILESYSTEM:READFILE 'TEK000.CSV'")
+osc.bug()
+osc.send("FILESYSTEM:READFILE 'TEK000.CSV'")
+osc.send("*TRG")
+osc.send('allev?')
+
+self=osc
+type="FREQUENCY"
+source="CH1"
+slot=1
+self.send("MEASUREMENT:MEAS{0}:SOURCE {2};MEASUREMENT:MEAS{0}:TYPE {1}".format(slot, type, source))
+type="FREQUENCY"
+source="CH4"
+slot=2
+self.send("MEASUREMENT:MEAS{0}:SOURCE {2};MEASUREMENT:MEAS{0}:TYPE {1}".format(slot, type, source))
+
+
+
+self.send("MEASUREMENT:MEAS{0}:SOURCE?".format(slot, type, source))
+self.send("MEASUREMENT:MEAS{0}:TYPE?".format(slot, type, source))
+
+self.send("MEASUREMENT:MEAS1:SOURCE CH1")
+self.send("MEASUREMENT:MEAS1:TYPE FREQUENCY")
+self.send("MEASUREMENT:MEAS2:SOURCE CH4")
+self.send("MEASUREMENT:MEAS2:TYPE FREQUENCY")
+#self.send("MEASUREMENT:MEAS1:TYPE?")
+
+osc.send("MEASUREMENT:DELETE MEAS1")
+
+osc.send('DATA:SOURCE CH4')
+
+osc.setMeasureSlot(5, "FREQUENCY,CH4" )# 
+
+
+print('***** Measurement List:')
+print(osc.send('MEASUrement:LIST?'))
+
+print('***** Value: PK2PK Measurement:')
+print(osc.send('MEASUrement:MEAS1:VALUE?'))
+
+print('***** Measurement with stats:')
+print(osc.send('MEASUrement:MEAS1:RESULTS:ALLACQS:MEAN?;MINI?;MAX?;STDDEV?;POPU?'))
+
+print('***** Measurement with unit and other tags:')
+print(osc.send('MEASUrement:MEAS1:VALUE?;YUNIT?;TYPE?;SOUR1?;SOUR2?'))
+osc.send('MEASUREMENT:MEAS1:SOURCE?')
