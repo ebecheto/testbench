@@ -5,13 +5,13 @@ tdc=MPTDC.MPTDC(0x77)
 date=time.strftime("%Y_%m_%d-%H_%M_%S"); jour, heure=date.split('-')
 fout=open("tdc_"+date+".log", "w") ;fout.write("#SLOW freq\n")
 for code in range(30):
-    tdc.setSlow(code); tdc.send(); osc.send("CLSW")
+    tdc.setFast(code); tdc.send(); osc.send("CLSW")
     fout.write("\n")
-    while float(osc.getMeasurement(1).SWEEPS)<=100:
+    while float(osc.getMeasurement(4).SWEEPS)<=100:
         None
-    freq=osc.getMeasurement(1)
+    freq=osc.getMeasurement(4)
     msg="\t".join([str(code), freq.AVG, freq.SIGMA])
-    print(msg)
+    raw_input(msg)
     fout.write(msg+'\n')
 
 

@@ -3,14 +3,15 @@
 import socket,sys, errno
 
 class PulseGenerator81160A:
-    BUFFER_SIZE = 1024
     
-    def __init__(self, ip, port=5025):
+    
+    def __init__(self, ip, port=5025, BUFFER_SIZE = 1024):
+        self.BUFFER_SIZE = BUFFER_SIZE
         self.name= "Agilent"
         self.ip=ip
         self.port=port
-        self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  
-#        self.connect()#<== now and then, connect need if using send. Otherwise, use senf into opened fifo from bypassPipe.py
+        self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.connect()#<== now and then, connect need if using send. Otherwise, use senf into opened fifo from bypassPipe.py
         self.response = ""
 #        self.idn = self.send("*IDN?")
         self.stdin  = None
@@ -62,12 +63,20 @@ class PulseGenerator81160A:
 
 #  " PULS:TRAN2:TRA"
 
+#USAGE for shell test (not import from python)
+#python drivers/PulseGenerator81160A.py -ip '169.254.222.26'
 if __name__ == '__main__':    
     import readline
     readline.parse_and_bind("tab: complete")
-    print 'Wait 8 seconds (slow to respond the 1st time)\n'
-    pg = PulseGenerator81160A('192.168.0.47', 5025)
-    print '''____exemple:____
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-ip', default='169.254.222.45')
+    args = parser.parse_args()
+    ip=args.ip
+
+    print( 'Wait 8 seconds (slow to respond the 1st time)\n')
+    pg = PulseGenerator81160A(ip, 5025)
+    print( '''____exemple:____
              OUTPUT ON
              OUTPUT?
              OUTPut2 OFF
@@ -77,13 +86,13 @@ if __name__ == '__main__':
              PULS:TRAN2?         #<= gives the leading edge value
              PULS:TRAN2:TRA 1e-6 #<= set trailing edge to 1us
              OUTP2:COMP ON #<= Enable OUT2_ 'complementary'
-             FREQ 1KHz'''
-    print 'To (q)uit, type q\n'
+             FREQ 1KHz''')
+    print( 'To (q)uit, type q\n')
     msg = "*IDN?"
     while msg != 'q':
         pg.send(msg)
         if '?' in msg:
-            print pg.response
+            print( pg.response)
         msg = raw_input('>')
 
 #A81.send("PULSe:POWer 1.2\n")

@@ -1,4 +1,3 @@
-
 import smbus, time
 # ls /dev/i2c-1  => smbus(1)
 bus=smbus.SMBus(1)

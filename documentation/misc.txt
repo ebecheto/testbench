@@ -26,6 +26,7 @@ python -m pip install pyserial
 sudo usermod -a -G dialout $USER
 
 # try this later :
-echo -n '$IDN*' | nc 169.254.222.26 4000 #=> write command to port
-nc -l 169.254.222.26 4000 #<= listen to the port
+echo -n '*IDN?' | nc 169.254.222.26 4000 #=> write command to port
+nc 169.254.222.26 4000 #<= listen to the port continuously
+
 

@@ -1,9 +1,9 @@
 import MSO
 osc = MSO.MSO('169.254.222.26'); print "Osc connected"
 import numpy as np
+self=osc
 
 slot=1
-self=osc
 self.send("CH{}:SV:STATE?".format(slot))
 self.send("CH{}:SV:STATE ON".format(slot))
 self.send('DATA:SOURCE CH{}_SV_NORMal'.format(slot))
@@ -64,6 +64,10 @@ f.write("WFID="+WFID+"\n")
 f.write("file='"+file+"'\n")
 f.write("plot file u (XZERO+$0*XINCR):1 w lp t WFID\n")
 xys=zip(self.send("SV:MARKER:PEAKS:FREQuency?")[1:-1].split(','), self.send("SV:MARKER:PEAKS:AMPLITUDE?")[1:-1].split(','))
+for n, xy in enumerate(xys):
+	f.write("xMK{}={} ;yMK{}={};".format(n+1,xy[0],n+1,xy[1]))
+	f.write("set label {} gprintf(\"%.2s%c\",xMK{}) at xMK{},yMK{} left\n".format(n+1,n+1,n+1,n+1))
+
 for n, xy in enumerate(xys):
 	f.write("set label {} gprintf(\"%.2s%c\", {}) at {},{}  left\n".format(n+1,xy[0],xy[0],xy[1]))
 

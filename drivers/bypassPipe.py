@@ -6,7 +6,7 @@ import errno
 # from subprocess import Popen, PIPE
 # p = Popen(['python', 'reader.py'], stdin = PIPE, stdout = PIPE, stderr = PIPE, shell = False)
 parser = argparse.ArgumentParser(description="reader.py -ip '192.168.0.47'")
-parser.add_argument('-ip', default='192.168.0.47', help='fifo name creation ')
+parser.add_argument('-ip', default='169.254.222.46', help='fifo name creation ')
 args = parser.parse_args(); ip=args.ip
 
 

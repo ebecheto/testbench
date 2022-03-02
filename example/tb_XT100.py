@@ -66,3 +66,12 @@ osc.send("MEASUREMENT:MEAS3:RESUlts:ALLAcqs:MEAN?");sleep(0.5)
 osc.send("MEASUREMENT:MEAS3:RESUlts:ALLAcqs:MEAN?");sleep(0.5)
 osc.send("MEASUREMENT:MEAS3:RESUlts:ALLAcqs:MEAN?");sleep(0.5)#<= second measure? get stuck if no sleep
 
+pul.send("del 50000.00")#<== max intrument limit
+pul.send("REL?") #=> '00...01111111\r'
+pul.send("del 50001.00")
+pul.send("DEL?") #=> '5.000000e-08\r'
+# no warning when asking over limit delay, but does not change the delay
+
+
+pul.send("del 00.00;")# take time (~ 2-sec) to release the delays
+

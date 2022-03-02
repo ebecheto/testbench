@@ -13,6 +13,7 @@ time.sleep(1.8)
 pul.senf("OUTPut2 OFF;OUTPut OFF")
 tdc.WBR=1;tdc.RO_STAY=0;tdc.setBits();tdc.setPort();tdc.send()
 #RESULT=tdc.spi.xfer2([0]*112)
+# tdc.spi.max_speed_hz=100000#<= 100kHz, ca passe
 tdc.read()
 
 cnts=tdc.res2cnt()

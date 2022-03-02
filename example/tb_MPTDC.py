@@ -1,6 +1,9 @@
 import MPTDC, AlimE3631A, OscilloWavePro, time
+
 osc = OscilloWavePro.OscilloWavePro('169.254.222.45'); print "Osc connected"
+
 tdc=MPTDC.MPTDC(0x77)
+
 tdc.pp()
 tdc.stay(1)
 tdc.stay(0)# STOP
@@ -55,7 +58,7 @@ print "splot '"+fout.name+"' u 1:2:($4-$3) w lp"
 import PulseGenerator81160A;
 pul = PulseGenerator81160A.PulseGenerator81160A('169.254.222.46')
 
-tdc.spi.max_speed_hz=100000
+#tdc.spi.max_speed_hz=100000
 
 tdc.stop();tdc.reset();tdc.start();
 #WRITE
@@ -68,3 +71,12 @@ tdc.WBR=1;tdc.RO_STAY=0;tdc.setBits();tdc.setPort();tdc.send()
 RESULT=tdc.spi.xfer2([0]*112)
 
 
+
+tdc.check()
+
+RESULT=[31, 251, 255, 191, 235, 253, 127, 207, 251, 254, 191, 215, 252, 255, 63, 239, 254, 127, 63, 63, 255, 255, 255, 255, 255, 247, 255, 255, 255, 159, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 240, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+# tdc.res2cnt() # RESULTS -> binary 112x11-bit counter list
+
+
+[int(x,2) for x in self.counters]

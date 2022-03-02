@@ -6,7 +6,7 @@ fout=open("tdc_"+date+".log", "w") ;fout.write("#FAST freq\n")
 
 fout.write("# "+"\t".join(["code","code2", "per1.AVG", "per1.SIGMA", "per2.AVG", "freq2.SIGMA", "freq1.AVG", "freq1.SIGMA", "freq2.AVG", "freq2.SIGMA"])+"\n")
 
-for code in range(31):
+for code in [15, 23, 27, 29, 30, 7, 11, 19, 13, 14, 21, 22, 25, 26, 3, 28, 5, 9, 6, 10, 17, 12, 18, 20, 24, 1, 2, 4, 8, 16, 0]:
     tdc.setFast(code)
     for code2 in range(31):
         tdc.setSlow(code); tdc.send(); osc.send("CLSW")

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import socket,errno,subprocess #os
-import collections
+import collections, time
 import numpy as np
 import sys
 
@@ -17,7 +17,9 @@ class MSO:
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.connect()#<== now and then, connect need if using send. Otherwise, use senf into opened fifo from bypassPipe.py
         self.response = ""
+        self.last_cmd = None
 #        self.idn = self.send('*IDN?')
+        self.send("SOCKETServer:PROTOCol NONE")#<= otherwise telnet prompt like
         self.stdin  = None
         self.stdout = None
         self.prout = ''
@@ -40,6 +42,10 @@ class MSO:
     def send(self,MESSAGE):
         try:
             msg = MESSAGE+'\n' if sys.version_info.major<3 else str(MESSAGE+'\n').encode('utf-8')
+            # if self.last_cmd is not None:# bad,but buggy *WAI *OPC? stuff
+            #     while time.time() - self.last_cmd < 1.:
+            #         time.sleep(0.2)
+            
             self.s.send(msg)
             self.response='no ?'
             if '?' in MESSAGE:
@@ -48,6 +54,7 @@ class MSO:
                     tmp2=self.s.recv(self.BUFFER_SIZE)
                     tmp+=tmp2 if sys.version_info.major<3 else tmp2.decode()
                 self.response = tmp[:-1]
+                self.last_cmd = time.time()
                 # ret=""
                 # self.response = self.s.recv(self.BUFFER_SIZE)
             return self.response.strip('\n')

@@ -4,12 +4,18 @@ from numpy import arange
 # from utiles import *
 import PulseGenerator81160A
 print 'Wait 8sec, slow init'
-pul = PulseGenerator81160A.PulseGenerator81160A('192.168.0.47')
+pul = PulseGenerator81160A.PulseGenerator81160A('169.254.222.46')
 print "pul connected"
+#pul.senf("*IDN?")
 
-pul.senf("*IDN?")
+pul.send("*TRG")
 
 
+pul.send("PULSe:TDELay1?")
+pul.send("PULSe:WIDTh1?")
+pul.send(":PULS:DEL?")
+
+            
 # :PULSe:TRANsition[1|2]:TRAiling{<seconds
 pul.send("PULSe:TRANsition2:TRAiling 1.2e-6")
 pul.send("PULS:TRAN2:TRA 1.2e-6")
