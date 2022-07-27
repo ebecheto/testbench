@@ -18,19 +18,20 @@ osc.send("DESE 1;*ESE 1;*SRE 32") #<= pas besoin, si utilisation correcte de *OP
 # pop=int(pop);print(pop, mean, sdev)
 
 #3.935000e-08
-pul.send("del 39.35 ns;*opc?")
-pul.send("REL?") # 0000000000111110
-pul.send("del 39.40 ns;*opc?")
-pul.send("REL?") # 0000000001101111
-pul.send("CTSTORE?") #=> '1' calibration table in use
-pul.send("CTSTORE? info")
+#pul.send("del 50 ns;*opc?")
+#pul.send("del 39.35 ns;*opc?")
+# pul.send("REL?") # 0000000000111110
+# pul.send("del 39.40 ns;*opc?")
+# pul.send("REL?") # 0000000001101111
+# pul.send("CTSTORE?") #=> '1' calibration table in use
+# pul.send("CTSTORE? info")
 # 'DATE=2/1/2022_12:08:55_PM,SN=22031948,VNA=E5063A-MY54502577,MARKER_F=2777777777'
 # 0.625*62 = 38.75
 # 0.625*63 = 39.375
 
 
 start=39350#0
-step=0.5# ps
+step=2.5# ps
 stop=42000#<= 50ns max depth
 ## INIT
 fout=open("XT100_carac_"+str(start)+"_"+str(stop)+"_"+str(step)+".dat", "w")
