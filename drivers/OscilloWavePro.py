@@ -367,7 +367,22 @@ class OscilloWavePro:
         ret=self.getMeasurement(PX)
         self.send("C{}:VDIV {};C{}:OFST {}".format(
             CH, ZM*float(ret.SIGMA), CH, -float(ret.AVG)))
+    
+    def getDigitalBus(self, setup=2, sample=1):
+        cmd_line = ":".join(["VBS? '",
+        "lines = app.LogicAnalyzer.Digital%d.Out.Result.Lines" % setup,
+        "val=0",   
+        "res = app.LogicAnalyzer.Digital%d.Out.Result.DataArray(1,-1,%d,0)" % (setup, sample),
+        "for line = 0 To lines-1",
+        "val=val + res(0,line)*2^line",
+        "Next",
+        "return=val"
+        ])    
+        samples = self.send(cmd_line)
+        ret=samples.lstrip("VBS ")
+        return ret+"="+hex(int(ret))+"="+format(int(ret), '#018b')
 
+        
 
 #USAGE for shell test (not import from python)
 #python drivers/OscilloWavePro.py -ip '192.168.0.48' -port 5025
