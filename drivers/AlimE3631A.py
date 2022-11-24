@@ -34,7 +34,7 @@ class AlimE3631A:
     
     def send(self,MESSAGE):
         try:
-            self.ser.write(MESSAGE+"\r\n")
+            self.ser.write(str.encode(MESSAGE+"\r\n"))
             time.sleep(0.2) #<== dont spam it
             # to send many command "CMD1;CMD2;CMD3;CMD4?"
             # if a query, stop sending commands
@@ -42,8 +42,8 @@ class AlimE3631A:
             if '?' in MESSAGE:
 #                time.sleep(0.5) 0.2+0.3
                 time.sleep(0.3)
-                self.response=self.ser.readline().strip('\r\n')
-                return self.response
+                self.response=self.ser.readline().strip(str.encode('\r\n'))
+                return self.response.decode("utf-8")
         
         except serial.errno as e:
             self.ser.open()
@@ -104,11 +104,11 @@ if __name__ == '__main__':
     readline.parse_and_bind("tab: complete")
     port="0" if len(sys.argv)<=1 else sys.argv[1]
     tty="/dev/ttyUSB"+port
-    print "== connecting to "+tty+" and purging possible errors =="
+    print( "== connecting to "+tty+" and purging possible errors ==")
     ae =  AlimE3631A(tty, 9600)
     while not( '0,"No error"') in ae.send("SYST:ERR?"):
-        print ae.response
-    print """___exemple:___
+        print( ae.response)
+    print( """___exemple:___
              OUTPut ON
              ...
              SYST:ERR?
@@ -122,12 +122,12 @@ if __name__ == '__main__':
              INST:SEL P6V         #<== appuye bouton +6V
              APPL P6V, 1.8, 1.0   #<== Set 1.8 volts / 1.0 amp to +6V output
              APPL P25V, 3.5, 1.0  #<== Set 3.5 volts / 1.0 amp to +25V output
-            """
-    print 'To (q)uit, type q\n'
+            """)
+    print( 'To (q)uit, type q\n')
     msg = "*IDN?"
     while msg != 'q':
         ae.send(msg)
         if '?' in msg:
-            print ae.response
+            print( ae.response)
         msg = raw_input('>')
-        print '>',msg,'<'
+        print( '>',msg,'<')
