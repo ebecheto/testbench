@@ -35,7 +35,7 @@ class OscilloWavePro:
         self.connect()
         self.response = ""
         self.response_header = None
-        self.idn = self.send("*IDN?")
+#        self.idn = self.send("*IDN?")
         
 
     def __del__(self):
@@ -47,18 +47,31 @@ class OscilloWavePro:
     def connect(self):
         self.s.connect((self.ip, self.port))
 
-    def send(self,msg):
-        TAILLE=len(""+msg)
+    def send(self,MESSAGE="*IDN?"):
+        TAILLE=len(""+MESSAGE)
         HEADER = "81"+"01"+"01"+"00"+ ("%08x" % TAILLE)
-        HEADER = HEADER.decode('hex')
+#        HEADER = HEADER.encode().decode()
+#        HEADER = HEADER.encode().decode('hex')
+#        HEADER = HEADER
+        if sys.version_info.major>=3 :
+#            print("PYTHON3")
+            msg=bytes.fromhex(HEADER)+MESSAGE.encode()
+        else:
+            HEADER = HEADER.decode('hex')
+            msg=HEADER+MESSAGE
         try:
-            self.s.send(HEADER+msg)
-            if '?' in msg:
-                tmp=''
-                while(tmp[-1:]!='\n'):
-                    tmp+= self.s.recv(self.BUFFER_SIZE)
-                self.response = tmp[8:-1]
-                return self.response
+            self.s.send(msg)
+            if '?' in MESSAGE:
+                tmp='' if sys.version_info.major<3 else b''
+                end=''
+                while(end != '\n'):
+                    tmp2=self.s.recv(self.BUFFER_SIZE)
+                    tmp+=tmp2
+                    end=tmp[-1:] if sys.version_info.major<3 else tmp[-1:].decode()
+                tmp=tmp[8:-1]
+                tmp=tmp if sys.version_info.major<3 else tmp.decode()
+                self.response = tmp
+                return self.response.strip('\n')
         except socket.error as e:
             self.connect()
             self.send(msg)
@@ -125,7 +138,7 @@ class OscilloWavePro:
         return vdiv, offset, ymin, ymax, gmax, gmin
 
     def setFrame(self, ch=1):
-        vdiv, offset  = [self.getVal("C{}:".format(ch)+tata+"?") for tata in "VDIV","OFST"]
+        vdiv, offset  = [self.getVal("C{}:".format(ch)+tata+"?") for tata in ["VDIV", "OFST"]]
         ymin, ymax=self.pava(("MIN", "MAX"),ch)
         vdiv=(ymax-ymin)/6
         offset=-(ymax+ymin)/2
@@ -367,6 +380,13 @@ class OscilloWavePro:
         ret=self.getMeasurement(PX)
         self.send("C{}:VDIV {};C{}:OFST {}".format(
             CH, ZM*float(ret.SIGMA), CH, -float(ret.AVG)))
+
+    def pp_digital(self, pp=True):
+        s1,s2=[int(self.send("vbs? return=app.LogicAnalyzer.Digital{}.Out.Result.Samples".format(i)).strip("^VBS ")) for i in range(1,3)]
+        l1,l2=[int(self.send("vbs? return=app.LogicAnalyzer.Digital{}.Out.Result.Lines".format(i)).strip("^VBS ")) for i in range(1,3)]
+        if pp:
+            print("Digital1:{}-bit, Digital2:{}-bit, resp. with {}, and {} samples".format(l1,l2,s1,s2))
+        return(l1,l2)
     
     def getDigitalBus(self, setup=2, sample=1):
         cmd_line = ":".join(["VBS? '",
@@ -380,7 +400,33 @@ class OscilloWavePro:
         ])    
         samples = self.send(cmd_line)
         ret=samples.lstrip("VBS ")
-        return ret+"="+hex(int(ret))+"="+format(int(ret), '#018b')
+        return ret+"="+hex(int(ret))+"="+format(int(ret), '#018b')+" ROW_{} COL_{}".format(int(ret)&0x7F, int(ret)>>7)
+
+    def getDigitalWaveForm(self, setup=1, line= 1):
+        """ electronics.stackexchange.com/questions/430542/reading-digital-wafevorms-via-vxi11-from-the-lecroy-wavesurfer-510-ms-500
+        """
+        cmd_line = ":".join(["VBS? 't=\"\"",
+            "num_samples = app.LogicAnalyzer.Digital{}.Out.Result.Samples".format(setup),
+             "sample=0",   
+             "last_sample=255",
+             "res = app.LogicAnalyzer.Digital{}.Out.Result.DataArray(-1,1,0,{})".format(setup, line),
+             "for j = 0 To num_samples-1",
+             "sample = res(j,0)",
+             "If ( (last_sample) <> (sample) ) Then " "last_sample=sample:t = t & sample & \"@\" & j & \",\" " "End If",
+             "Next",
+             "return=t"
+            ])    
+        return self.send(cmd_line).lstrip("VBS ")
+
+    def getDigitalWaveForms(self):
+        n1,n2=self.pp_digital(False)
+        print("Digital1:")
+        for n in range(1,n1+1):
+            print(self.getDigitalWaveForm(1,n))
+        print("Digital2:")
+        for n in range(1,n2+1):
+            print(self.getDigitalWaveForm(2,n))
+
 
         
 

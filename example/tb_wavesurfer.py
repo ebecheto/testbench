@@ -26,7 +26,9 @@ osc.send("VBS? 'return=app.LogicAnalyzer.Digital1.Out.Result.DataArray(1)'")
 osc.send("VBS? 'return=app.Object.Item(\'Acquisition\')'")
 
 
-osc.send("vbs? 'Dim BusName As String; BusName=app.LogicAnalyzer.Digital1.Out.Result.BusName'")
+osc.send("vbs? 'Dim BusName As String: BusName=app.LogicAnalyzer.Digital1.Out.Result.BusName: return=BusName'")
+
+osc.send("vbs? return=app.LogicAnalyzer.Digital1.Out.Result.BusName")
 
 # >>> osc.send("VBS? 'Dim return As String; return=app.LogicAnalyzer.Digital2.Out.Result.DataArray'")
 # 'VBS Name redefined'
@@ -66,3 +68,18 @@ osc.send("VBS? 'return=app.LogicAnalyzer.Digital1.Out.Result.DataArray(1,-1,1000
 osc.send("vbs? return=app.LogicAnalyzer.Digital1.Out.Result.DataArray(1,-1,0,0)(0,0)") #
 
 osc.getDigitalBus() #=> '16=0x10=0b0000000000010000'osc.getDigitalBus() #=> '16=0x10=0b0000000000010000'
+
+
+self=osc
+setup=1
+sample=1000
+cmd_line = ":".join(["VBS? '",
+"lines = app.LogicAnalyzer.Digital{}.Out.Result.Lines".format(setup),
+"val=0",   
+"res = app.LogicAnalyzer.Digital{}.Out.Result.DataArray(1,-1,{},0)".format(setup, sample),
+"for line = 0 To lines-1",
+"val=val + res(0,line)*2^line",
+"Next",
+"return=val'"
+])    
+samples = self.send(cmd_line)
