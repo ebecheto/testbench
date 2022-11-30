@@ -386,9 +386,9 @@ class OscilloWavePro:
         l1,l2=[int(self.send("vbs? return=app.LogicAnalyzer.Digital{}.Out.Result.Lines".format(i)).strip("^VBS ")) for i in range(1,3)]
         if pp:
             print("Digital1:{}-bit, Digital2:{}-bit, resp. with {}, and {} samples".format(l1,l2,s1,s2))
-        return(l1,l2)
+        return(l1,l2,s1,s2)
     
-    def getDigitalBus(self, setup=2, sample=1):
+    def getDigitalBus(self, setup=2, sample=1, pp=True):
         cmd_line = ":".join(["VBS? '",
         "lines = app.LogicAnalyzer.Digital%d.Out.Result.Lines" % setup,
         "val=0",   
@@ -400,7 +400,9 @@ class OscilloWavePro:
         ])    
         samples = self.send(cmd_line)
         ret=samples.lstrip("VBS ")
-        return ret+"="+hex(int(ret))+"="+format(int(ret), '#018b')+" ROW_{} COL_{}".format(int(ret)&0x7F, int(ret)>>7)
+        if pp:
+            print(ret+"="+hex(int(ret))+"="+format(int(ret), '#018b')+" ROW_{} COL_{}".format(int(ret)&0x7F, int(ret)>>7))
+        return ret
 
     def getDigitalWaveForm(self, setup=1, line= 1):
         """ electronics.stackexchange.com/questions/430542/reading-digital-wafevorms-via-vxi11-from-the-lecroy-wavesurfer-510-ms-500
@@ -419,7 +421,7 @@ class OscilloWavePro:
         return self.send(cmd_line).lstrip("VBS ")
 
     def getDigitalWaveForms(self):
-        n1,n2=self.pp_digital(False)
+        n1,n2=self.pp_digital(False)[0:2]
         print("Digital1:")
         for n in range(1,n1+1):
             print(self.getDigitalWaveForm(1,n))
