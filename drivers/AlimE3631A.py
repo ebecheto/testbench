@@ -28,7 +28,7 @@ class AlimE3631A:
             self.ser.close()
         self.ser.open()
         self.response = ""
-        # self.send("SYST:REM") #<== a refaire si on appuye sur bouton 'Local'
+        self.send("SYST:REM") #<== a refaire si on appuye sur bouton 'Local'
         # time.sleep(0.2)#<== le passage en remote mets un peu de temps
         # self.idn = self.send("*IDN?")
     
@@ -69,11 +69,14 @@ class AlimE3631A:
         i2=self.send("MEAS:CURR:DC? P25V")
         return i1, i2
     
-    def pwr(self, bouton=0):
+    def pwr(self, bouton=0, mA=True):
         cadrant=["P6V", "P25V", "N25V"]
         i=self.send("MEAS:CURR:DC? "+cadrant[bouton])
         v=self.send("MEAS:VOLT:DC? "+cadrant[bouton])
-        return "{}[A]@{}[V]".format(i, v)
+        ret="{}[A]@{}[V]".format(i, v)
+        if mA :
+            ret="{}[mA]@{}[V]".format(float(i)*1E3, v)
+        return ret
     
     def RES(self):
         return self.send("MEAS:RES?").split(',')[2]

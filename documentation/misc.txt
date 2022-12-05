@@ -6,6 +6,8 @@ arp
 si pas dans le bon sous reseau essayer : nmap  -sP 192.168.0.0/16
 verifier eventuelement l'ouverture des ports : nmap 192.168.0.45 -p1-8081
 specifier l'adresse IP fixe du server dhcp dans /etc/network/interfaces
+now check also interface : /etc/default/isc-dhcp-server
+$> sudo apt-get -y install isc-dhcp-server
 modifier /etc/dhcp/dhcpd.conf en consequence
 lancer :$> sudo service isc-dhcp-server restart
 
@@ -19,7 +21,7 @@ export PYTHONPATH=$HOME/testbench/python-ivi/python-vxi11:$PYTHONPATH
 export PYTHONPATH=$HOME/testbench/python-ivi/python-ivi:$PYTHONPATH
 export PYTHONPATH=$HOME/testbench/python-ivi/python-usbtmc:$PYTHONPATH
 emacs --reverse-video 
-ifconfig eth1 192.168.0.41 netmask 255.255.255.0 broadcast 192.168.0.255
+sudo ifconfig eth1 192.168.0.1 netmask 255.255.255.0 broadcast 192.168.0.255
 sudo ifconfig eth1 169.254.222.25 netmask 255.255.255.0 broadcast 169.254.222.255
 
 python -m pip install pyserial
