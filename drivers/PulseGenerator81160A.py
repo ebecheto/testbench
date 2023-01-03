@@ -25,13 +25,17 @@ class PulseGenerator81160A:
 
     def send(self,MESSAGE):
         try:
-            self.s.send(MESSAGE+"\n")
+            msg=MESSAGE.encode()+'\n'.encode()
+            self.s.send(msg)
             if '?' in MESSAGE:
-                self.response = self.s.recv(self.BUFFER_SIZE)
+                tmp=''
+                while(tmp[-1:]!='\n'):
+                    tmp+= self.s.recv(self.BUFFER_SIZE).decode()
+                self.response = tmp
             return self.response.strip('\n')
         except socket.error as e:
             self.connect()
-            self.send(MESSAGE)
+            self.send(msg)
 
             
     def senf(self,MESSAGE):
@@ -42,13 +46,13 @@ class PulseGenerator81160A:
         reads comes from /tmp/pipe_2cli_192.168.0.47 #<== if self.ip is this ip
         """
         self.stdout  = open("/tmp/pipe_2pul_"+self.ip, 'w')
-        self.stdout.write(MESSAGE+"\n")
+        self.stdout.write(MESSAGE.encode()+"\n".encode())
         self.stdout.flush()
         self.stdout.close()
         
         if '?' in MESSAGE:
             self.stdin  = open("/tmp/pipe_2cli_"+self.ip, 'r', 0)#<== now fifo in listen mode wait bypass to close it
-            self.response = self.stdin.read()
+            self.response = self.stdin.read().decode()
         return self.response
         
             
@@ -59,6 +63,15 @@ class PulseGenerator81160A:
         """set Trailing edge to ie. 1us if edge="1e-6"
         """
         self.send("PULSe:TRANsition1:TRAiling {}".format(edge))
+
+    def status(self,pp=True):
+        strs=[]
+        strs+=(" :OUTPUT{}?","VOLTage{}:OFFSet?","FREQ{}?")
+        strs+=["PULS:TRAN{}?","VOLT{}?","PULSe:TDELay{}?","PULSe:WIDTh{}?"]
+        cmd=[s.format(i) for i in range(1,3) for s in strs]
+        ret=["{}={}".format(c,self.send(c)) for c in cmd]
+        print("\n".join(ret)) if pp else True
+        return ret
 
 
 #  " PULS:TRAN2:TRA"
